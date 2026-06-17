@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="theme-color" content="#FFFFFF"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="StuD"/>
+  <title>StuDiscount — Student Discount App</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/tabler-icons.min.css"/>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet"/>
+  <script src="https://js.stripe.com/v3/" crossorigin="anonymous"></script>
+
+  <style>
+    .mapboxgl-ctrl-logo{display:none!important;}
+    .mapboxgl-ctrl-attrib{font-size:9px!important;background:rgba(255,255,255,0.7)!important;}
+  </style>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+    html,body,#root{height:100%;background:#0C0D0F;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}
+    html,body{overscroll-behavior-y:contain;}
+    input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
+    ::-webkit-scrollbar{display:none;}
+    #splash-loader{position:fixed;inset:0;background:#FFFFFF;display:flex;align-items:center;justify-content:center;z-index:9999;transition:opacity 0.6s;}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.75;transform:scale(1.04)}}
+    @keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+    .siok-nav-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:7px 12px;border-radius:10px;border:none;cursor:pointer;min-width:50px;gap:3px;background:rgba(75,163,195,0.08);font-family:inherit;transition:all 0.15s;}
+    .siok-nav-btn.active{background:#E8F6FC;}
+    .siok-nav-btn i{font-size:22px;color:#4BA3C3;}
+    .siok-nav-btn span{font-size:10px;font-weight:600;color:#4BA3C3;}
+    .siok-nav-sep{width:1px;height:32px;background:rgba(0,0,0,0.08);margin:0 2px;flex-shrink:0;}
+    .siok-bottom-bar{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,0.98);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid rgba(0,0,0,0.06);display:flex;z-index:3100;padding-bottom:env(safe-area-inset-bottom,0);box-shadow:0 -4px 24px rgba(0,0,0,0.07);min-height:64px;align-items:center;}
+    .siok-bottom-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 4px;border:none;background:transparent;cursor:pointer;font-family:inherit;transition:all 0.2s;position:relative;-webkit-tap-highlight-color:transparent;}
+    .siok-bottom-btn.active::after{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:28px;height:3px;border-radius:0 0 6px 6px;background:linear-gradient(90deg,#0066FF,#14B8A6);}
+    .siok-bottom-btn i{font-size:24px;transition:transform 0.2s;}
+    .siok-bottom-btn span{font-size:10px;font-weight:700;color:#C0C0C0;}
+    .siok-bottom-btn.active span{color:#1A1A2E;}
+    .siok-bottom-btn:active{transform:scale(0.88);}
+    .siok-bottom-logo{display:flex;align-items:center;justify-content:center;padding:0 8px;flex-shrink:0;}
+    .siok-card{transition:transform 0.18s cubic-bezier(0.34,1.56,0.64,1),box-shadow 0.18s ease;}
+    .siok-card:active{transform:scale(0.97);}
+  </style>
+</head>
+<body>
+  <div id="splash-loader">
+    <div style="width:80px;height:80px;border-radius:24px;background:linear-gradient(135deg,#0066FF,#3399FF);display:flex;align-items:center;justify-content:center;font-size:38px;box-shadow:0 12px 40px rgba(0,102,255,0.4);">🎓</div>
+  </div>
+  <div id="root"></div>
+
+  <script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js" crossorigin="anonymous"></script>
+  <script>mapboxgl.accessToken="pk.eyJ1Ijoic2Vsa2hvdSIsImEiOiJjbXFmN25neXYwNDl6MnJxeW1wOWdqMXd5In0.BdSsZTjKclMcaBvsSxBAoQ";</script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js" crossorigin="anonymous"></script>
+
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+</html>
