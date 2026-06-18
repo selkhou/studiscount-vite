@@ -11,7 +11,7 @@ export default function QRGenerator({ offre, etudiant, onClose }) {
   const [qrData, setQrData] = useState(null)
 
   useEffect(() => {
-    const data = genQRData(offre.id, etudiant?.id || null)
+    const data = genQRData(offre.id, etudiant?.id || 'anon')
     const parsed = JSON.parse(data)
     setQrData(parsed)
     const encoded = encodeURIComponent(data)
@@ -122,7 +122,7 @@ export default function QRGenerator({ offre, etudiant, onClose }) {
 
         {isExpired && (
           <button onClick={() => {
-            const data = genQRData(offre.id, etudiant?.id || null)
+            const data = genQRData(offre.id, etudiant?.id || 'anon')
             const parsed = JSON.parse(data)
             setQrData(parsed)
             const encoded = encodeURIComponent(data)
