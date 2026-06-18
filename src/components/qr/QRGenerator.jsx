@@ -19,7 +19,7 @@ export default function QRGenerator({ offre, etudiant, onClose }) {
   async function generateQR() {
     setLoading(true)
     try {
-      const qrData = genQRData(offre.id, etudiant.id)
+      const qrData = genQRData(offre.id, etudiant?.id || 'anon')
       const url = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrData)}`
       setQrUrl(url)
 
@@ -41,7 +41,7 @@ export default function QRGenerator({ offre, etudiant, onClose }) {
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 600,
+      position: 'fixed', inset: 0, zIndex: 3000,
       background: 'rgba(0,0,0,0.7)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: 20

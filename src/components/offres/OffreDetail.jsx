@@ -172,13 +172,18 @@ export default function OffreDetail({ offre, etudiant, isFavori, onToggleFavori,
           </div>
         )}
 
-        {/* Bouton QR — seulement si connecté */}
-        {etudiant && (
-          <button onClick={onQR}
-            style={{ width: '100%', padding: '14px 0', borderRadius: 14, border: 'none', background: CS.accent, color: 'white', fontSize: 15, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', marginBottom: 10, boxShadow: `0 4px 14px ${CS.accentGlow}`, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-            <span style={{ fontSize: 20 }}>📱</span>
-            Générer mon QR code pour validation par le commerçant
-          </button>
+       
+        {/* Bouton QR — visible pour tous */}
+        <button onClick={onQR}
+          style={{ width: '100%', padding: '14px 0', borderRadius: 14, border: 'none', background: CS.accent, color: 'white', fontSize: 15, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', marginBottom: 10, boxShadow: `0 4px 14px ${CS.accentGlow}`, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <span style={{ fontSize: 20 }}>📱</span>
+          Générer mon QR code pour validation par le commerçant
+        </button>
+
+        {!etudiant && (
+          <div style={{ background: '#F0F9FF', border: '1px solid rgba(0,102,255,0.15)', borderRadius: 12, padding: '10px 14px', marginBottom: 10, fontSize: 12, color: CS.muted, textAlign: 'center' }}>
+            💡 <button onClick={onToggleFavori} style={{ background: 'none', border: 'none', color: CS.accent, fontWeight: 700, cursor: 'pointer', fontSize: 12, fontFamily: 'inherit' }}>Crée ton compte</button> pour cumuler des points à chaque visite
+          </div>
         )}
 
         {/* Explication */}
@@ -206,15 +211,7 @@ export default function OffreDetail({ offre, etudiant, isFavori, onToggleFavori,
           </a>
         )}
 
-        {/* Pas connecté */}
-       
-        {!etudiant && (
-  <button
-    onClick={onToggleFavori}
-    style={{ width: '100%', background: CS.accentSoft, borderRadius: 14, padding: '14px 16px', textAlign: 'center', fontSize: 13, color: CS.accent, fontWeight: 600, border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
-    🎓 Connecte-toi pour profiter de cette offre
-  </button>
-)}
+      
       </div>
     </div>
   )

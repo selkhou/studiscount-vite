@@ -13,6 +13,7 @@ import OffreDetail from '../offres/OffreDetail.jsx'
 import ModalSuggestion from '../etudiant/ModalSuggestion.jsx'
 import ModalPointsCadeaux from '../ui/ModalPointsCadeaux.jsx'
 import EtudiantDashboard from '../etudiant/EtudiantDashboard.jsx'
+import QRGenerator from '../qr/QRGenerator.jsx'
 
 // ── SVG Icons ──────────────────────────────────────────
 const IcoListe = ({ active }) => (
@@ -162,6 +163,8 @@ export default function MapExplorer({ onConnecte, onPrestataire }) {
   const listRef = useRef(null)
   const { offres, loading } = useOffres(city, userLocation)
   const [showLogin, setShowLogin] = useState(false)
+  const [showQR, setShowQR] = useState(false)
+const [qrOffre, setQrOffre] = useState(null)
 
   useEffect(() => {
     navigator.geolocation?.getCurrentPosition(
@@ -303,9 +306,9 @@ export default function MapExplorer({ onConnecte, onPrestataire }) {
       {selected && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 2850, background: '#F5F5F5', overflowY: 'auto', display: 'flex', flexDirection: 'column', paddingBottom: 64 }}>
           <OffreDetail offre={selected} etudiant={null} isFavori={false}
-            onToggleFavori={onConnecte}
+            onToggleFavori={() => setShowLogin(true)}
             onClose={() => setSelected(null)}
-            onQR={() => {}}
+            onQR={() => { setQrOffre(selected); setShowQR(true) }}
           />
         </div>
       )}
@@ -347,12 +350,19 @@ export default function MapExplorer({ onConnecte, onPrestataire }) {
         />
       )}
       {showLogin && (
-  <div style={{ position: 'fixed', inset: 0, zIndex: 2800, background: '#F5F5F5', overflowY: 'auto' }}>
+  <div style={{ position: 'fixed', inset: 0, zIndex: 2900, background: '#F5F5F5', overflowY: 'auto' }}>
     <EtudiantDashboard
       onBack={() => setShowLogin(false)}
       onConnecte={(et) => { setShowLogin(false); onConnecte(et) }}
     />
   </div>
+)}
+{showQR && qrOffre && (
+  <QRGenerator
+    offre={qrOffre}
+    etudiant={null}
+    onClose={() => { setShowQR(false); setQrOffre(null) }}
+  />
 )}
 
       {/* Bottom bar */}
