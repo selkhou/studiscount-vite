@@ -160,7 +160,7 @@ async function trackVue(offreId, etudiantId) {
   if (_vuesSeen.has(key)) return
   _vuesSeen.add(key)
   try { await db().from('vues_offres').insert({ offre_id: offreId, etudiant_id: etudiantId || null }) }
-  catch (e) {}
+  catch (e) { }
 }
 
 // ── useOffres ─────────────────────────────────────────
@@ -246,6 +246,85 @@ function OffreTile({ o, isFav, etudiantId, onSelect, onToggleFavori }) {
   )
 }
 
+function BonsCadeauxEtudiant({ etudiantId }) {
+  const [bons, setBons] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showQR, setShowQR] = useState(null)
+
+  useEffect(() => {
+    if (!etudiantId) return
+    db().from('bons_cadeaux')
+      .select('*,partenaires_cadeaux(nom,emoji)')
+      .eq('etudiant_id', etudiantId)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => { setBons(data || []); setLoading(false) })
+  }, [etudiantId])
+
+  if (loading) return <div style={{ textAlign: 'center', padding: 32, color: '#9CA3AF' }}>Chargement…</div>
+
+  if (bons.length === 0) return (
+    <div style={{ textAlign: 'center', padding: '48px 20px', color: '#9CA3AF' }}>
+      <div style={{ fontSize: 48, marginBottom: 12 }}>🎟️</div>
+      <div style={{ color: '#1A1A2E', fontWeight: 700, marginBottom: 6 }}>Aucun bon cadeau</div>
+      <div style={{ fontSize: 13 }}>Réclamez votre premier bon depuis Mes points</div>
+    </div>
+  )
+
+  return (
+    <div style={{ padding: 16 }}>
+      {bons.map(b => (
+        <div key={b.id} style={{ background: '#FFFFFF', borderRadius: 16, padding: '14px 16px', marginBottom: 10, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 15, color: '#1A1A2E' }}>
+                {b.partenaires_cadeaux?.emoji} {b.partenaires_cadeaux?.nom}
+              </div>
+              <div style={{ color: '#22C55E', fontWeight: 900, fontSize: 18 }}>{b.montant}€</div>
+              <div style={{ color: '#9CA3AF', fontSize: 11, marginTop: 2 }}>
+                {new Date(b.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
+              </div>
+            </div>
+            <div style={{
+              background: b.statut === 'valide' ? 'rgba(34,197,94,0.1)' : b.statut === 'en_attente' ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)',
+              color: b.statut === 'valide' ? '#22C55E' : b.statut === 'en_attente' ? '#F59E0B' : '#EF4444',
+              fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 20
+            }}>
+              {b.statut === 'valide' ? '✅ Validé' : b.statut === 'en_attente' ? '⏳ En attente' : '❌ Refusé'}
+            </div>
+          </div>
+
+          {b.statut === 'valide' && (
+            <div>
+              <div style={{ fontFamily: 'monospace', fontSize: 16, color: '#0066FF', fontWeight: 900, letterSpacing: 2, textAlign: 'center', padding: '8px', background: '#F0F6FF', borderRadius: 10, marginBottom: 8 }}>
+                {b.code}
+              </div>
+              <button onClick={() => setShowQR(showQR === b.id ? null : b.id)}
+                style={{ width: '100%', padding: '10px', borderRadius: 10, border: '1.5px solid #0066FF', background: showQR === b.id ? '#0066FF' : 'white', color: showQR === b.id ? 'white' : '#0066FF', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                {showQR === b.id ? '▲ Masquer le QR' : '📱 Afficher le QR code'}
+              </button>
+              {showQR === b.id && (
+                <div style={{ textAlign: 'center', padding: '16px 0' }}>
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(b.code)}&bgcolor=ffffff&color=000000&margin=2`}
+                    alt="QR code bon cadeau"
+                    style={{ width: 200, height: 200, borderRadius: 12 }}
+                  />
+                  <div style={{ color: '#9CA3AF', fontSize: 11, marginTop: 8 }}>Présentez ce QR chez {b.partenaires_cadeaux?.nom}</div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {b.statut === 'en_attente' && (
+            <div style={{ background: 'rgba(245,158,11,0.08)', borderRadius: 10, padding: '8px 12px', fontSize: 12, color: '#F59E0B' }}>
+              ⏳ En attente de validation par l'équipe StuDiscount
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
 // ── EtudiantApp ───────────────────────────────────────
 export default function EtudiantApp({ etudiant, onLogout, onHome }) {
   const [tab, setTab] = useState('offres')
@@ -275,11 +354,12 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
   const [drillKpi, setDrillKpi] = useState(null)
   const { offres, loading } = useOffres(city, userLocation)
   const [showModal, setShowModal] = useState(false)
+  const [showMesBons, setShowMesBons] = useState(false)
 
   useEffect(() => {
     navigator.geolocation?.getCurrentPosition(
       p => setUserLocation({ lat: p.coords.latitude, lng: p.coords.longitude }),
-      () => {}
+      () => { }
     )
     loadFavoris()
     loadVisites()
@@ -305,7 +385,7 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
     try {
       const { data } = await db().from('vues_offres').select('offre_id').eq('etudiant_id', etudiant.id)
       if (data) setVuesEtudiant(data)
-    } catch (e) {}
+    } catch (e) { }
   }
 
   const loadFavoris = async () => {
@@ -313,7 +393,7 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
     try {
       const { data } = await db().from('favoris').select('offre_id').eq('etudiant_id', etudiant.id)
       if (data) setFavIds(new Set(data.map(f => f.offre_id)))
-    } catch (e) {}
+    } catch (e) { }
   }
 
   const toggleFavori = async (offre) => {
@@ -358,7 +438,7 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
     try {
       const s = localStorage.getItem('stu10_etudiant')
       if (s) { const e = JSON.parse(s); return e.points || 0 }
-    } catch (ex) {}
+    } catch (ex) { }
     return etudiant?.points || 0
   })()
 
@@ -486,7 +566,7 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
                 </div>
               )}
 
-           {/* Grille 2 colonnes */}
+              {/* Grille 2 colonnes */}
               {!showReco && offresAffichees.length > 0 && (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, paddingBottom: 8 }}>
                   {offresAffichees.map(o => (
@@ -560,6 +640,18 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
           onClose={() => setShowCadeaux(false)}
           onPointsDeduits={() => loadVisites()} />
       )}
+      {/* Mes bons cadeaux */}
+      {showMesBons && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 3200, background: '#F5F5F5', overflowY: 'auto', paddingBottom: 80 }}>
+          <div style={{ background: '#FFFFFF', padding: '52px 16px 16px', borderBottom: '1px solid #E5E7EB', position: 'sticky', top: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <button onClick={() => setShowMesBons(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: '#374151' }}>←</button>
+              <div style={{ color: '#1A1A2E', fontWeight: 800, fontSize: 16 }}>🎟️ Mes bons cadeaux</div>
+            </div>
+          </div>
+          <BonsCadeauxEtudiant etudiantId={etudiant?.id} />
+        </div>
+      )}
 
       {/* Changement mot de passe */}
       {showChangePwd && (
@@ -622,7 +714,7 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
                       try {
                         const s = localStorage.getItem('stu10_etudiant')
                         if (s) { const e = JSON.parse(s); Object.assign(e, data); localStorage.setItem('stu10_etudiant', JSON.stringify(e)) }
-                      } catch (ex) {}
+                      } catch (ex) { }
                     }
                     return !error
                   }}
@@ -688,7 +780,7 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
             )}
 
             {profileTab === '🎁 Cadeaux' && (
-              <MesCadeaux etudiant={etudiant} totalPoints={totalPoints} onPointsUpdate={() => {}} />
+              <MesCadeaux etudiant={etudiant} totalPoints={totalPoints} onPointsUpdate={() => { }} />
             )}
 
             {profileTab === 'Mes points' && (
@@ -698,6 +790,10 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
                   <div style={{ color: 'white', fontWeight: 900, fontSize: 48, lineHeight: 1 }}>{totalPoints}</div>
                   <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, marginTop: 4 }}>points ⭐</div>
                 </div>
+                <button onClick={() => setShowMesBons(true)}
+                  style={{ width: '100%', marginBottom: 8, padding: '12px', borderRadius: 12, border: '1.5px solid #F59E0B', background: 'white', color: '#F59E0B', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  🎟️ Mes bons cadeaux
+                </button>
                 {totalPoints >= 250 && (
                   <button onClick={() => { setShowProfile(false); setShowCadeaux(true) }}
                     style={{ width: '100%', marginBottom: 12, padding: '12px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg,#F59E0B,#FBBF24)', color: 'white', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' }}>
@@ -740,11 +836,11 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
         </button>
       </div>
       {showModal && (
-  <ModalPointsCadeaux
-    onClose={() => setShowModal(false)}
-    onConnecte={() => setShowModal(false)}
-  />
-)}
+        <ModalPointsCadeaux
+          onClose={() => setShowModal(false)}
+          onConnecte={() => setShowModal(false)}
+        />
+      )}
     </div>
   )
 }

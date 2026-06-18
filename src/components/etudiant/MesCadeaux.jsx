@@ -17,6 +17,7 @@ export default function MesCadeaux({ etudiant, totalPoints, onPointsUpdate }) {
   const [selectedPartenaire, setSelectedPartenaire] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [showMesBons, setShowMesBons] = useState(false)
 
   useEffect(() => {
     (async () => {
