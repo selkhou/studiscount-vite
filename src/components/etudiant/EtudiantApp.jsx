@@ -20,6 +20,7 @@ import ModalSuggestion from './ModalSuggestion.jsx'
 import ModalCGU from '../ui/ModalCGU.jsx'
 import ChangePassword from '../ui/ChangePassword.jsx'
 import ModalPointsCadeaux from '../ui/ModalPointsCadeaux.jsx'
+import useImpressionTracker from '../../hooks/useImpressionTracker.js'
 
 // ── SVG Icons ─────────────────────────────────────────
 const IcoListe = ({ active }) => (
@@ -209,6 +210,40 @@ function useOffres(city, userLocation) {
   }, [city, userLocation])
 
   return { offres, loading }
+}
+function OffreTile({ o, isFav, etudiantId, onSelect, onToggleFavori }) {
+  const impRef = useImpressionTracker(o.id, etudiantId)
+  const type = getTypeMetier(o.type_offre)
+  return (
+    <div ref={impRef}
+      onClick={() => onSelect(o)}
+      style={{ background: '#FFFFFF', borderRadius: 16, overflow: 'hidden', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.07)', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ position: 'relative', flexShrink: 0 }}>
+        <PhotoCarousel photos={o.photos} height={120} emoji={type.emoji} gradient={bannerGradient(o.type_offre)} />
+        <div style={{ position: 'absolute', top: 8, right: 8, background: '#EF4444', color: 'white', fontSize: 12, fontWeight: 900, padding: '3px 10px', borderRadius: 50, zIndex: 3 }}>
+          -{o.promo_pct}%
+        </div>
+        <button onClick={e => { e.stopPropagation(); onToggleFavori(o) }}
+          style={{ position: 'absolute', top: 8, left: 8, width: 28, height: 28, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', border: '1.5px solid rgba(0,0,0,0.25)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, zIndex: 3 }}>
+          {isFav ? '❤️' : '🤍'}
+        </button>
+      </div>
+      <div style={{ padding: '8px 10px 10px', flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <div style={{ color: CS.text, fontWeight: 800, fontSize: 13, lineHeight: 1.3 }}>{o.titre}</div>
+        <div style={{ color: CS.muted, fontSize: 11 }}>{o.prestataire_nom}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2, flexWrap: 'wrap' }}>
+          {o.prix && <span style={{ color: '#22C55E', fontWeight: 900, fontSize: 14 }}>{parseFloat(o.prix).toFixed(2)}€</span>}
+          {o.prix_normal && <span style={{ color: '#C0C0C0', fontSize: 11, textDecoration: 'line-through' }}>{parseFloat(o.prix_normal).toFixed(2)}€</span>}
+        </div>
+        {o.note_moyenne > 0 && (
+          <div style={{ color: '#F59E0B', fontSize: 11, fontWeight: 700 }}>
+            ★ {parseFloat(o.note_moyenne).toFixed(1)} <span style={{ color: '#9CA3AF', fontWeight: 400, fontSize: 10 }}>({o.nb_avis || 0} avis)</span>
+          </div>
+        )}
+        {o.date_fin && <div style={{ color: '#EF4444', fontSize: 10, fontWeight: 700 }}>⏰ {fmtDate(o.date_fin)}</div>}
+      </div>
+    </div>
+  )
 }
 
 // ── EtudiantApp ───────────────────────────────────────
@@ -451,43 +486,19 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
                 </div>
               )}
 
-              {/* Grille 2 colonnes */}
+           {/* Grille 2 colonnes */}
               {!showReco && offresAffichees.length > 0 && (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, paddingBottom: 8 }}>
-                  {offresAffichees.map(o => {
-                    const type = getTypeMetier(o.type_offre)
-                    const isFav = favIds.has(o.id)
-                    return (
-                      <div key={o.id}
-                        onClick={() => { setSelected(o); trackVue(o.id, etudiant?.id || null) }}
-                        style={{ background: '#FFFFFF', borderRadius: 16, overflow: 'hidden', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.07)', display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ position: 'relative', flexShrink: 0 }}>
-                          <PhotoCarousel photos={o.photos} height={120} emoji={type.emoji} gradient={bannerGradient(o.type_offre)} />
-                          <div style={{ position: 'absolute', top: 8, right: 8, background: '#EF4444', color: 'white', fontSize: 12, fontWeight: 900, padding: '3px 10px', borderRadius: 50, zIndex: 3 }}>
-                            -{o.promo_pct}%
-                          </div>
-                          <button onClick={e => { e.stopPropagation(); toggleFavori(o) }}
-                            style={{ position: 'absolute', top: 8, left: 8, width: 28, height: 28, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', border: '1.5px solid rgba(0,0,0,0.25)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, zIndex: 3 }}>
-                            {isFav ? '❤️' : '🤍'}
-                          </button>
-                        </div>
-                        <div style={{ padding: '8px 10px 10px', flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
-                          <div style={{ color: CS.text, fontWeight: 800, fontSize: 13, lineHeight: 1.3 }}>{o.titre}</div>
-                          <div style={{ color: CS.muted, fontSize: 11 }}>{o.prestataire_nom}</div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2, flexWrap: 'wrap' }}>
-                            {o.prix && <span style={{ color: '#22C55E', fontWeight: 900, fontSize: 14 }}>{parseFloat(o.prix).toFixed(2)}€</span>}
-                            {o.prix_normal && <span style={{ color: '#C0C0C0', fontSize: 11, textDecoration: 'line-through' }}>{parseFloat(o.prix_normal).toFixed(2)}€</span>}
-                          </div>
-                          {o.note_moyenne > 0 && (
-                            <div style={{ color: '#F59E0B', fontSize: 11, fontWeight: 700 }}>
-                              ★ {parseFloat(o.note_moyenne).toFixed(1)} <span style={{ color: '#9CA3AF', fontWeight: 400, fontSize: 10 }}>({o.nb_avis || 0} avis)</span>
-                            </div>
-                          )}
-                          {o.date_fin && <div style={{ color: '#EF4444', fontSize: 10, fontWeight: 700 }}>⏰ {fmtDate(o.date_fin)}</div>}
-                        </div>
-                      </div>
-                    )
-                  })}
+                  {offresAffichees.map(o => (
+                    <OffreTile
+                      key={o.id}
+                      o={o}
+                      isFav={favIds.has(o.id)}
+                      etudiantId={etudiant?.id}
+                      onSelect={o => { setSelected(o); trackVue(o.id, etudiant?.id || null) }}
+                      onToggleFavori={toggleFavori}
+                    />
+                  ))}
                 </div>
               )}
             </div>
