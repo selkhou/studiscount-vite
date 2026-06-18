@@ -78,7 +78,7 @@ export default function QRScanner({ prestataireId, onScanned, onClose }) {
         offre_id: qr.offreId,
         prestataire_id: prestataireId,
         etudiant_id: qr.etudiantId === 'anon' ? null : qr.etudiantId,
-        etudiant_anon_id: qr.etudiantId === 'anon' ? 'anon' : null,
+        etudiant_anon_id: (!qr.etudiantId || qr.etudiantId === 'anon') ? 'anon' : null,
         points: qr.etudiantId && qr.etudiantId !== 'anon' ? (parseInt(window.SIOK_PARAMS?.points_qrc) || 3) : 0,
         montant_normal: prixNormal,
         montant_remise: prixRemise,

@@ -38,7 +38,7 @@ export default function QRGenerator({ offre, etudiant, onClose }) {
         if (etudiant?.id) {
           query = query.eq('etudiant_id', etudiant.id)
         } else {
-          query = query.eq('etudiant_anon_id', 'anon')
+          query = query.is('etudiant_id', null).eq('etudiant_anon_id', 'anon')
         }
 
         const { data: visits } = await query.limit(1)
