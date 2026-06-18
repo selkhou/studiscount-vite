@@ -40,13 +40,20 @@ window.addEventListener('unhandledrejection', function (e) {
 
 // Démarrage de l'app — on importe App ici
 // (les imports async viendront après)
-import('./App.jsx').then(({ default: App }) => {
-  const loader = document.getElementById('splash-loader')
-  const root = createRoot(document.getElementById('root'))
-  root.render(<StrictMode><App /></StrictMode>)
-  if (loader) {
-    loader.style.transition = 'opacity 0.5s'
-    loader.style.opacity = '0'
-    setTimeout(() => (loader.style.display = 'none'), 600)
-  }
+import { loadParams, loadTarifs, loadTypesMetier } from './utils.js'
+
+loadParams()
+  .then(() => loadTarifs())
+  .then(() => loadTypesMetier())
+  .then(() => import('./App.jsx'))
+  .then(({ default: App }) => {
+    const loader = document.getElementById('splash-loader')
+    const root = createRoot(document.getElementById('root'))
+    root.render(<StrictMode><App /></StrictMode>)
+    if (loader) {
+      loader.style.transition = 'opacity 0.5s'
+      loader.style.opacity = '0'
+      setTimeout(() => (loader.style.display = 'none'), 600)
+    }
+
 })
