@@ -17,6 +17,7 @@ export default function ModalSuggestion({ nom, type, onClose }) {
     if (!note) return setError('Merci de donner une note')
     setSaving(true); setError('')
     try {
+      console.log('note envoyée:', note)
       const { error: e } = await db().from('suggestions').insert({
         nom: nomSaisi.trim() || null,
         type,

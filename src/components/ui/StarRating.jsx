@@ -4,11 +4,12 @@ export default function StarRating({ value, onChange, size = 20, readOnly = fals
       {[1, 2, 3, 4, 5].map(i => (
         <span
           key={i}
-          onClick={() => !readOnly && onChange && onChange(i)}
+         onClick={() => { console.log('note:', i); !readOnly && onChange && onChange(i) }}
           style={{
             fontSize: size,
             cursor: readOnly ? 'default' : 'pointer',
-            color: i <= value ? '#F59E0B' : '#D1D5DB',
+            color: i <= value ? '#F59E0B' : '#E8E8E8',
+opacity: i <= value ? 1 : 0.4,
             transition: 'color 0.15s'
           }}>
           ★
