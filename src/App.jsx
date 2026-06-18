@@ -28,12 +28,12 @@ export default function App() {
     try {
       if (et) localStorage.setItem('stu10_etudiant', JSON.stringify(et))
       else { localStorage.removeItem('stu10_etudiant'); localStorage.removeItem('stu10_screen') }
-    } catch (e) {}
+    } catch (e) { }
   }
 
   const setScreenPersist = (s) => {
     setScreen(s)
-    try { localStorage.setItem('stu10_screen', s) } catch (e) {}
+    try { localStorage.setItem('stu10_screen', s) } catch (e) { }
   }
 
   useEffect(() => {
@@ -89,7 +89,18 @@ export default function App() {
 
   if (screen === 'explorer') return (
     <MapExplorer
-      onConnecte={() => setScreen('auth')}
+      onConnecte={(et) => {
+        if (et) {
+          setEtudiant(et)
+          setScreen('etudiant-app')
+          try {
+            localStorage.setItem('stu10_etudiant', JSON.stringify(et))
+            localStorage.setItem('stu10_screen', 'etudiant-app')
+          } catch (ex) { }
+        } else {
+          setScreen('auth')
+        }
+      }}
       onPrestataire={() => setScreen('prestataire-login')}
     />
   )
@@ -97,7 +108,15 @@ export default function App() {
   if (screen === 'auth') return (
     <EtudiantDashboard
       onBack={() => setScreenPersist('explorer')}
-      onConnecte={(e) => { setEtudiantPersist(e); setScreenPersist('etudiant-app') }}
+      onConnecte={(e) => {
+        console.log('onConnecte appelé', e?.prenom)
+        setEtudiant(e)
+        setScreen('etudiant-app')
+        try {
+          localStorage.setItem('stu10_etudiant', JSON.stringify(e))
+          localStorage.setItem('stu10_screen', 'etudiant-app')
+        } catch (ex) { }
+      }}
     />
   )
 

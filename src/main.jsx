@@ -49,7 +49,7 @@ loadParams()
   .then(({ default: App }) => {
     const loader = document.getElementById('splash-loader')
     const root = createRoot(document.getElementById('root'))
-    root.render(<StrictMode><App /></StrictMode>)
+    root.render(<App />)
     if (loader) {
       loader.style.transition = 'opacity 0.5s'
       loader.style.opacity = '0'

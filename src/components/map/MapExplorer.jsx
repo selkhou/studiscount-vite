@@ -395,7 +395,7 @@ export default function MapExplorer({ onConnecte, onPrestataire }) {
         <div style={{ position: 'fixed', inset: 0, zIndex: 2900, background: '#F5F5F5', overflowY: 'auto' }}>
           <EtudiantDashboard
             onBack={() => setShowLogin(false)}
-            onConnecte={(et) => { setShowLogin(false); onConnecte(et) }}
+            onConnecte={(et) => { onConnecte(et) }}
           />
         </div>
       )}

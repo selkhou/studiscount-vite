@@ -20,14 +20,22 @@ function EtudiantLogin({ onSuccess, onRegister, onBack }) {
       const { data, error: e } = await db().auth.signInWithPassword({ email, password: pwd })
       if (e) { setError(e.message); setLoading(false); return }
 
+      // Attendre que la session soit propagée
+      await db().auth.getSession()
+
       const { data: et } = await db()
         .from('etudiants')
         .select('*')
         .eq('auth_id', data.user.id)
         .single()
 
-      if (et) onSuccess(et)
-      else setError('Compte étudiant introuvable')
+      if (et) {
+        setLoading(false)
+        onSuccess(et)
+      } else {
+        setError('Compte étudiant introuvable')
+        setLoading(false)
+      }
     } catch (e) {
       setError(e.message)
     }
