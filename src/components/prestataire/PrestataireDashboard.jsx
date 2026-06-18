@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { getC } from '../../constants.js'
 import { db } from '../../lib/supabase.js'
 import {
@@ -210,9 +210,9 @@ export default function PrestataireDashboard({ user, onLogout, onHome }) {
                 </div>
               </div>
               <div style={{ color: C.muted, fontSize: 12 }}>{type.label} · {active.ville}</div>
-             </div>
-             <BoutonSuggestion nom={active.nom} type="prestataire" />
-        
+            </div>
+            <BoutonSuggestion nom={active.nom} type="prestataire" />
+
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             {[
@@ -339,8 +339,8 @@ export default function PrestataireDashboard({ user, onLogout, onHome }) {
           </div>
         )}
 
-        {/* Onglet Stats */}
-        {dashTab === 'stats' && (
+        {/* Onglet Stats */ }
+{dashTab === 'stats' && (
           <div>
             {!planHasStats(active?.plan) && (
               <div style={{ background: 'linear-gradient(135deg,rgba(0,102,255,0.08),rgba(124,58,237,0.08))', border: '1px solid rgba(0,102,255,0.2)', borderRadius: 16, padding: '24px 20px', textAlign: 'center', marginBottom: 16 }}>
@@ -353,15 +353,17 @@ export default function PrestataireDashboard({ user, onLogout, onHome }) {
               <>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
                   <button onClick={async () => { await loadVisitesPrest(active.id); await loadVues(active.id) }}
-                    style={{ padding: '7px 14px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: '#FFFFFF', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    style={{ padding: '7px 14px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: '#FFFFFF', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6 }}>
                     🔄 Actualiser
                   </button>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
+                {/* KPIs 5 colonnes */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
                   {[
+                    { l: 'Impr.', v: Object.values(impressionsMap).reduce((s, n) => s + n, 0), color: '#9CA3AF' },
                     { l: 'Vues', v: Object.values(vuesMap).reduce((s, n) => s + n, 0), color: '#6B7280' },
-                    { l: 'Visites', v: visites.length, color: '#22C55E' },
+                    { l: 'Honorées', v: visites.length, color: '#22C55E' },
                     { l: 'CA €', v: visites.reduce((s, v) => s + (v.montant_remise || 0), 0).toFixed(0) + '€', color: '#F59E0B' },
                     { l: 'Éco. €', v: visites.reduce((s, v) => s + ((v.montant_normal || 0) - (v.montant_remise || 0)), 0).toFixed(0) + '€', color: '#22C55E' },
                   ].map(s => (
@@ -372,6 +374,53 @@ export default function PrestataireDashboard({ user, onLogout, onHome }) {
                   ))}
                 </div>
 
+                {/* Historique mensuel */}
+                {(() => {
+                  const moisList = []
+                  const now = new Date()
+                  for (let i = 0; i < 6; i++) {
+                    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+                    const m = d.getMonth(), y = d.getFullYear()
+                    const label = d.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' })
+                    const imp = (impressionsData || []).filter(v => { const vd = new Date(v.created_at); return vd.getMonth() === m && vd.getFullYear() === y }).length
+                    const vues = vuesData.filter(v => { const vd = new Date(v.created_at); return vd.getMonth() === m && vd.getFullYear() === y }).length
+                    const visAnon = visites.filter(v => { const vd = new Date(v.created_at); return vd.getMonth() === m && vd.getFullYear() === y && v.etudiant_anon_id }).length
+                    const visCompte = visites.filter(v => { const vd = new Date(v.created_at); return vd.getMonth() === m && vd.getFullYear() === y && !v.etudiant_anon_id }).length
+                    moisList.push({ label, imp, vues, visAnon, visCompte, isCurrent: i === 0 })
+                  }
+                  return (
+                    <div style={{ marginBottom: 16 }}>
+                      <div style={{ color: '#FFFFFF', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Historique mensuel</div>
+                      <div style={{ overflowX: 'auto', paddingBottom: 4 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: `80px repeat(6,minmax(52px,1fr))`, minWidth: 400 }}>
+                          <div />
+                          {moisList.map(m => (
+                            <div key={m.label} style={{ textAlign: 'center', padding: '4px 2px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                              <div style={{ color: m.isCurrent ? '#4D9EFF' : '#FFFFFF', fontSize: 10, fontWeight: 700 }}>{m.label}</div>
+                              {m.isCurrent && <div style={{ color: '#4D9EFF', fontSize: 8 }}>EN COURS</div>}
+                            </div>
+                          ))}
+                          {[
+                            { label: '👁️ Impr.', key: 'imp' },
+                            { label: '👁️ Vues', key: 'vues' },
+                            { label: '€ Anon.', key: 'visAnon' },
+                            { label: '€ Compte', key: 'visCompte' },
+                          ].map(row => (
+                            <React.Fragment key={row.label}>
+                              <div style={{ fontSize: 10, color: '#FFFFFF', fontWeight: 700, display: 'flex', alignItems: 'center', height: 32, paddingRight: 4 }}>{row.label}</div>
+                              {moisList.map((m, i) => (
+                                <div key={i} style={{ height: 32, background: '#000000', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '2px' }}>
+                                  <span style={{ color: '#FFFFFF', fontWeight: 800, fontSize: 13 }}>{m[row.key]}</span>
+                                </div>
+                              ))}
+                            </React.Fragment>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })()}
+
                 <ActivityChart visites={visites} vuesData={vuesData} impressionsData={impressionsData} />
 
                 {visites.length > 0 && (
@@ -381,10 +430,12 @@ export default function PrestataireDashboard({ user, onLogout, onHome }) {
                       <div key={v.id} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '10px 14px', marginBottom: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
                           <div style={{ color: C.text, fontSize: 13, fontWeight: 600 }}>{v.offres?.titre || 'Offre'}</div>
-                          <div style={{ color: C.muted, fontSize: 11 }}>{new Date(v.created_at).toLocaleDateString('fr-FR')}</div>
+                          <div style={{ color: C.muted, fontSize: 11 }}>
+                            {new Date(v.created_at).toLocaleDateString('fr-FR')} · {new Date(v.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                          </div>
                         </div>
-                        <span style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20 }}>
-                          🎓 Connecté
+                        <span style={{ background: v.etudiant_anon_id ? 'rgba(107,114,128,0.1)' : 'rgba(34,197,94,0.1)', color: v.etudiant_anon_id ? '#6b7280' : '#22c55e', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20 }}>
+                          {v.etudiant_anon_id ? 'Anonyme' : '🎓 Connecté'}
                         </span>
                       </div>
                     ))}
