@@ -10,6 +10,7 @@ export default function VisiteCard({ visite: v, type, etudiantId, onUpdated }) {
   const [note, setNote] = useState(v.note || 0)
   const [saving, setSaving] = useState(false)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const SUPABASE_URL = 'https://ghwozyzlhcmuhneumasv.supabase.co'
 
   const submitAvis = async () => {
     if (!avis.trim() && !note) return
@@ -62,7 +63,7 @@ export default function VisiteCard({ visite: v, type, etudiantId, onUpdated }) {
       const path = `visites/${v.id}/${Date.now()}_${file.name.replace(/[^a-z0-9.]/gi, '_')}`
       const { error: upErr } = await db().storage.from('siok-offer-photos').upload(path, file, { contentType: file.type, upsert: false })
       if (upErr) throw upErr
-      const photoUrl = `${window.SUPABASE_URL}/storage/v1/object/public/siok-offer-photos/${path}`
+      const photoUrl = `${SUPABASE_URL}/storage/v1/object/public/siok-offer-photos/${path}`
       await db().from('visites').update({ photo_url: photoUrl }).eq('id', v.id)
       onUpdated({ photo_url: photoUrl })
     } catch (e) { console.error(e) }

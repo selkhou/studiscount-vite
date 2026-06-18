@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { getC } from '../../constants.js'
 import { db } from '../../lib/supabase.js'
 
-const SUPABASE_URL = 'https://ghwozyzlhcmuhneumasv.supabase.co'
 
+const SUPABASE_URL = 'https://ghwozyzlhcmuhneumasv.supabase.co'
 export default function OffrePhotosManager({ offreId, photos, onUpdate }) {
   const C = getC()
   const [uploading, setUploading] = useState(false)
