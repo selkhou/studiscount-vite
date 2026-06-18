@@ -47,7 +47,11 @@ export default function MapContainer({ offres, selected, onSelect, city, userLoc
         'font-size:18px', 'cursor:pointer',
         'box-shadow:0 2px 8px rgba(0,0,0,0.15)',
       ].join(';')
-      el.textContent = offre.image_emoji || '🎯'
+     //  el.textContent = offre.image_emoji || '🎯'
+      const type = window.SIOK_TYPES
+  ? (window.SIOK_TYPES.find(t => t.id === offre.type_offre) || { emoji: '🎯' })
+  : { emoji: offre.image_emoji || '🎯' }
+el.textContent = type.emoji
       el.addEventListener('click', () => onSelect && onSelect(offre))
 
       const marker = new window.mapboxgl.Marker({ element: el })

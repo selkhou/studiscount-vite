@@ -12,6 +12,7 @@ import NavFiltres from '../etudiant/NavFiltres.jsx'
 import OffreDetail from '../offres/OffreDetail.jsx'
 import ModalSuggestion from '../etudiant/ModalSuggestion.jsx'
 import ModalPointsCadeaux from '../ui/ModalPointsCadeaux.jsx'
+import EtudiantDashboard from '../etudiant/EtudiantDashboard.jsx'
 
 // ── SVG Icons ──────────────────────────────────────────
 const IcoListe = ({ active }) => (
@@ -160,6 +161,7 @@ export default function MapExplorer({ onConnecte, onPrestataire }) {
   const [search, setSearch] = useState('')
   const listRef = useRef(null)
   const { offres, loading } = useOffres(city, userLocation)
+  const [showLogin, setShowLogin] = useState(false)
 
   useEffect(() => {
     navigator.geolocation?.getCurrentPosition(
@@ -341,9 +343,17 @@ export default function MapExplorer({ onConnecte, onPrestataire }) {
       {showModal && (
         <ModalPointsCadeaux
           onClose={() => setShowModal(false)}
-          onConnecte={() => { setShowModal(false); setShowChoixProfil(true) }}
+          onConnecte={() => { setShowModal(false); setShowLogin(true) }}
         />
       )}
+      {showLogin && (
+  <div style={{ position: 'fixed', inset: 0, zIndex: 2800, background: '#F5F5F5', overflowY: 'auto' }}>
+    <EtudiantDashboard
+      onBack={() => setShowLogin(false)}
+      onConnecte={(et) => { setShowLogin(false); onConnecte(et) }}
+    />
+  </div>
+)}
 
       {/* Bottom bar */}
       <div className="siok-bottom-bar" style={{ zIndex: 3100 }}>
@@ -371,7 +381,7 @@ export default function MapExplorer({ onConnecte, onPrestataire }) {
               <div style={{ fontSize: 18, fontWeight: 900, color: '#1A1A2E' }}>Qui êtes-vous ?</div>
               <div style={{ fontSize: 13, color: '#9CA3AF', marginTop: 4 }}>Choisissez votre profil</div>
             </div>
-            <button onClick={() => { setShowChoixProfil(false); onConnecte() }}
+            <button onClick={() => { setShowChoixProfil(false); setShowLogin(true) }}
               style={{ width: '100%', padding: '16px', borderRadius: 16, border: '2px solid #0066FF', background: '#EBF0FF', cursor: 'pointer', fontFamily: 'inherit', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 14 }}>
               <svg width="32" height="32" viewBox="0 -960 960 960" fill="#0066FF">
                 <path d="M367-527q-47-47-47-113t47-113q47-47 113-47t113 47q47 47 47 113t-47 113q-47 47-113 47t-113-47ZM160-160v-112q0-34 17.5-62.5T224-378q62-31 126-46.5T480-440q66 0 130 15.5T736-378q29 15 46.5 43.5T800-272v112H160Z" />

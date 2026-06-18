@@ -207,11 +207,14 @@ export default function OffreDetail({ offre, etudiant, isFavori, onToggleFavori,
         )}
 
         {/* Pas connecté */}
+       
         {!etudiant && (
-          <div style={{ background: CS.accentSoft, borderRadius: 14, padding: '14px 16px', textAlign: 'center', fontSize: 13, color: CS.accent, fontWeight: 600 }}>
-            🎓 Connecte-toi pour profiter de cette offre
-          </div>
-        )}
+  <button
+    onClick={onToggleFavori}
+    style={{ width: '100%', background: CS.accentSoft, borderRadius: 14, padding: '14px 16px', textAlign: 'center', fontSize: 13, color: CS.accent, fontWeight: 600, border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
+    🎓 Connecte-toi pour profiter de cette offre
+  </button>
+)}
       </div>
     </div>
   )
