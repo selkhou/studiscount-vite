@@ -1,0 +1,450 @@
+import { useState, useEffect, useRef } from 'react'
+import { getC } from '../../constants.js'
+import { db } from '../../lib/supabase.js'
+import {
+  getTypeMetier, isOffreActive, fmtDate,
+  planHasStats, planHasIA, planMaxOffres, getPlanInfo, planLabel
+} from '../../utils.js'
+import { loadParams } from '../../utils.js'
+import { PrestPageShell } from '../ui/PageShells.jsx'
+import Btn from '../ui/Btn.jsx'
+import ModalCGU from '../ui/ModalCGU.jsx'
+import ChangePassword from '../ui/ChangePassword.jsx'
+import QRScanner from '../qr/QRScanner.jsx'
+import OffreEditor from './OffreEditor.jsx'
+import StripeSetupCard from './StripeSetupCard.jsx'
+import ChangementAbonnement from './ChangementAbonnement.jsx'
+import EditProfilPrestataire from './EditProfilPrestataire.jsx'
+import ActivityChart from './ActivityChart.jsx'
+import FacturePrestataire from './FacturePrestataire.jsx'
+import ConseilIA from './ConseilIA.jsx'
+
+export default function PrestataireDashboard({ user, onLogout, onHome }) {
+  const C = getC()
+  const [active, setActive] = useState(null)
+  const [offres, setOffres] = useState([])
+  const [visites, setVisites] = useState([])
+  const [vuesMap, setVuesMap] = useState({})
+  const [vuesData, setVuesData] = useState([])
+  const [impressionsMap, setImpressionsMap] = useState({})
+  const [impressionsData, setImpressionsData] = useState([])
+  const [view, setView] = useState('dashboard')
+  const [showChangePwd, setShowChangePwd] = useState(false)
+  const [showCGUPresta, setShowCGUPresta] = useState(false)
+  const [editingOffre, setEditingOffre] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [toast, setToast] = useState(null)
+  const [dashTab, setDashTab] = useState('offres')
+  const [bgColor, setBgColor] = useState(window.SIOK_PARAMS?.fond_couleur_presta || '#0C0D0F')
+  const [headerColor, setHeaderColor] = useState(window.SIOK_PARAMS?.fond_header_presta || null)
+  const activeRef = useRef(null)
+
+  useEffect(() => { activeRef.current = active }, [active])
+
+  useEffect(() => {
+    loadParams().then(() => {
+      setBgColor(window.SIOK_PARAMS?.fond_couleur_presta || '#0C0D0F')
+      setHeaderColor(window.SIOK_PARAMS?.fond_header_presta || null)
+    })
+    loadPrestataires()
+    const onFocus = () => {
+      const a = activeRef.current
+      if (a) { loadVisitesPrest(a.id); loadVues(a.id) }
+    }
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
+  }, [])
+
+  const loadPrestataires = async () => {
+    setLoading(true)
+    try {
+      const { data } = await db().from('prestataires').select('*').eq('auth_id', user.id)
+      if (data && data.length > 0) {
+        setActive(data[0])
+        await loadOffres(data[0].id)
+        await loadVisitesPrest(data[0].id)
+        await loadVues(data[0].id)
+      }
+    } catch (e) { console.error(e) }
+    setLoading(false)
+  }
+
+  const loadOffres = async prestId => {
+    const { data } = await db().from('offres').select('*').eq('prestataire_id', prestId).order('created_at', { ascending: false })
+    setOffres(data || [])
+  }
+
+  const loadVisitesPrest = async prestId => {
+    const { data } = await db().from('visites')
+      .select('id,prestataire_id,offre_id,montant_remise,montant_normal,created_at,etudiant_id,etudiant_anon_id,avis,note,photo_url,statut_avis,offres(titre,type_offre,promo_pct,prix)')
+      .eq('prestataire_id', prestId)
+      .order('created_at', { ascending: false }).limit(200)
+    if (data) setVisites(data)
+  }
+
+  const loadVues = async prestId => {
+    if (!prestId) return
+    const { data: offresData } = await db().from('offres').select('id').eq('prestataire_id', prestId)
+    if (!offresData || offresData.length === 0) return
+    const ids = offresData.map(o => o.id)
+    const [{ data: vuesRaw }, { data: impRaw }] = await Promise.all([
+      db().from('vues_offres').select('offre_id,created_at').in('offre_id', ids).order('created_at', { ascending: false }).limit(2000),
+      db().from('impressions_offres').select('offre_id,created_at').in('offre_id', ids).order('created_at', { ascending: false }).limit(5000),
+    ])
+    if (vuesRaw) {
+      const map = {}; vuesRaw.forEach(v => { map[v.offre_id] = (map[v.offre_id] || 0) + 1 })
+      setVuesMap(map); setVuesData(vuesRaw)
+    }
+    if (impRaw) {
+      const map = {}; impRaw.forEach(v => { map[v.offre_id] = (map[v.offre_id] || 0) + 1 })
+      setImpressionsMap(map); setImpressionsData(impRaw)
+    }
+  }
+
+  const toggleOffre = async offre => {
+    const next = !offre.active
+    await db().from('offres').update({ active: next }).eq('id', offre.id)
+    setOffres(os => os.map(o => o.id === offre.id ? { ...o, active: next } : o))
+    setToast({ msg: next ? 'Offre activée ✅' : 'Offre désactivée', type: next ? 'success' : 'info' })
+    setTimeout(() => setToast(null), 2500)
+  }
+
+  const showToast = (msg, type = 'success') => {
+    setToast({ msg, type })
+    setTimeout(() => setToast(null), 2500)
+  }
+
+  if (loading) return (
+    <div style={{ background: bgColor || C.bg, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.muted }}>
+      Chargement…
+    </div>
+  )
+
+  if (active?.statut === 'suspendu') return (
+    <div style={{ background: C.bg, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <div style={{ background: C.card, border: '1px solid rgba(239,68,68,0.3)', borderRadius: 20, padding: 32, maxWidth: 400, textAlign: 'center' }}>
+        <div style={{ fontSize: 56, marginBottom: 16 }}>⛔</div>
+        <div style={{ color: '#EF4444', fontWeight: 900, fontSize: 20, marginBottom: 8 }}>Compte suspendu</div>
+        <div style={{ color: C.muted, fontSize: 13, lineHeight: 1.6, marginBottom: 16 }}>
+          Votre compte a été suspendu.
+          {active.motif_suspension && <><br />Motif : <strong style={{ color: C.text }}>{active.motif_suspension}</strong></>}
+        </div>
+        <button onClick={onLogout} style={{ padding: '10px 20px', borderRadius: 12, border: 'none', background: 'rgba(239,68,68,0.1)', color: '#EF4444', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+          Se déconnecter
+        </button>
+      </div>
+    </div>
+  )
+
+  if (!active) return (
+    <PrestPageShell onBack={onLogout} backLabel="Déconnexion" bgColor={bgColor} headerColor={headerColor}>
+      <div style={{ padding: 24, textAlign: 'center', color: C.muted }}>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>🏪</div>
+        <div style={{ color: C.text, fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Aucun profil prestataire</div>
+        <div style={{ fontSize: 13, marginBottom: 24 }}>Contactez l'administrateur StuDiscount.</div>
+        <Btn variant="outline" onClick={onLogout}>Se déconnecter</Btn>
+      </div>
+    </PrestPageShell>
+  )
+
+  if (view === 'scanner') return (
+    <QRScanner
+      prestataireId={active.id}
+      onScanned={async () => {
+        await loadOffres(active.id)
+        await loadVisitesPrest(active.id)
+        await loadVues(active.id)
+        showToast('✅ Visite validée !')
+      }}
+      onClose={() => setView('dashboard')}
+    />
+  )
+
+  if (view === 'edit-offre' || view === 'new-offre') return (
+    <OffreEditor
+      offre={editingOffre}
+      prestataireId={active.id}
+      onBack={() => { setView('dashboard'); setEditingOffre(null) }}
+      onSaved={async () => {
+        await loadOffres(active.id)
+        setView('dashboard'); setEditingOffre(null)
+        showToast('Offre sauvegardée ✅')
+      }}
+    />
+  )
+
+  const type = getTypeMetier(active.type_metier)
+
+  return (
+    <PrestPageShell
+      onBack={dashTab === 'offres' ? onLogout : () => setDashTab('offres')}
+      backLabel={dashTab === 'offres' ? 'Déconnexion' : '← Offres'}
+      onHome={onHome} bgColor={bgColor} headerColor={headerColor}
+      topSlot={
+        <div>
+          {toast && (
+            <div style={{ background: toast.type === 'success' ? 'rgba(34,197,94,0.15)' : 'rgba(0,102,255,0.1)', border: `1px solid ${toast.type === 'success' ? 'rgba(34,197,94,0.4)' : C.accent}`, borderRadius: 10, padding: '8px 14px', marginBottom: 8, color: toast.type === 'success' ? '#22c55e' : C.accent, fontSize: 13, fontWeight: 600 }}>
+              {toast.msg}
+            </div>
+          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+            <div style={{ fontSize: 28 }}>{type.emoji}</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ color: C.text, fontWeight: 800, fontSize: 16 }}>{active.nom}</div>
+              <div style={{ color: C.muted, fontSize: 12 }}>{type.label} · {active.ville}</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {[
+              { v: 'offres', l: '🎯 Offres' },
+              { v: 'stats', l: '📊 Stats', locked: !planHasStats(active?.plan) },
+              { v: 'facture', l: '💶 Facture' },
+              { v: 'profil', l: '👤 Profil' }
+            ].map(t => (
+              <button key={t.v} onClick={() => !t.locked && setDashTab(t.v)} style={{
+                flex: 1, padding: '9px 0', borderRadius: 10,
+                border: `1px solid ${dashTab === t.v ? C.accent : C.border}`,
+                background: dashTab === t.v ? C.accentSoft : t.locked ? 'rgba(107,114,128,0.05)' : 'transparent',
+                color: dashTab === t.v ? C.accent : C.muted,
+                fontSize: 11, fontWeight: dashTab === t.v ? 700 : 400,
+                cursor: t.locked ? 'default' : 'pointer', fontFamily: 'inherit', opacity: t.locked ? 0.5 : 1
+              }}>
+                {t.locked ? '🔒 ' : ''}{t.l}
+              </button>
+            ))}
+          </div>
+        </div>
+      }
+    >
+      <div style={{ padding: '16px 20px' }}>
+
+        {/* Onglet Offres */}
+        {dashTab === 'offres' && (
+          <div>
+            <button onClick={() => setView('scanner')} style={{
+              width: '100%', padding: '16px', borderRadius: 14, border: 'none',
+              background: 'linear-gradient(135deg,#22C55E,#16A34A)', color: 'white',
+              fontSize: 15, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
+              marginBottom: 12, boxShadow: '0 4px 16px rgba(34,197,94,0.4)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10
+            }}>
+              <span style={{ fontSize: 22 }}>📷</span>
+              <span>Scanner le QR code étudiant</span>
+            </button>
+
+            {(() => {
+              const nbActives = offres.filter(o => isOffreActive(o)).length
+              const maxO = planMaxOffres(active?.plan)
+              const blocked = nbActives >= maxO
+              return (
+                <button onClick={() => { if (!blocked) { setEditingOffre(null); setView('new-offre') } }}
+                  style={{
+                    width: '100%', padding: '12px', borderRadius: 14, border: 'none', marginBottom: 16,
+                    background: blocked ? 'rgba(107,114,128,0.15)' : 'linear-gradient(135deg,#0066FF,#3399FF)',
+                    color: blocked ? '#6b7280' : 'white', fontSize: 13, fontWeight: 700,
+                    cursor: blocked ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
+                    boxShadow: blocked ? 'none' : '0 3px 12px rgba(0,102,255,0.3)'
+                  }}>
+                  {blocked ? `🔒 Limite atteinte (${nbActives}/${maxO})` : '+ Nouvelle offre'}
+                </button>
+              )
+            })()}
+
+            {offres.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '40px 20px', color: C.muted }}>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>🎯</div>
+                <div style={{ color: C.text, fontWeight: 700, marginBottom: 6 }}>Aucune offre</div>
+                <div style={{ fontSize: 13 }}>Créez votre première offre promotionnelle</div>
+              </div>
+            )}
+
+            {offres.map(o => {
+              const ot = getTypeMetier(o.type_offre)
+              const nbVues = vuesMap[o.id] || 0
+              const nbVisites = visites.filter(v => v.offre_id === o.id).length
+              const conv = nbVues > 0 ? Math.round(nbVisites / nbVues * 100) : 0
+              return (
+                <div key={o.id} style={{ background: C.card, border: `1px solid ${o.active ? 'rgba(34,197,94,0.3)' : C.border}`, borderRadius: 14, padding: '14px 16px', marginBottom: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                    <span style={{ fontSize: 24 }}>{ot.emoji}</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ color: C.text, fontWeight: 700, fontSize: 15 }}>{o.titre}</div>
+                      <div style={{ color: C.muted, fontSize: 12 }}>{o.prix_normal ? `${o.prix_normal}€ · ` : ''}{o.permanente ? 'Permanente' : 'Temporaire'}</div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ color: C.muted, fontWeight: 700, fontSize: 12 }}>{nbVues}</div>
+                        <div style={{ color: C.muted, fontSize: 8 }}>vues</div>
+                      </div>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ color: '#0066FF', fontWeight: 800, fontSize: 13 }}>{nbVisites}</div>
+                        <div style={{ color: C.muted, fontSize: 8 }}>visit.</div>
+                      </div>
+                      {nbVues > 0 && (
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ color: '#22c55e', fontWeight: 700, fontSize: 11 }}>{conv}%</div>
+                          <div style={{ color: C.muted, fontSize: 8 }}>conv.</div>
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ background: isOffreActive(o) ? 'rgba(34,197,94,0.15)' : 'rgba(107,114,128,0.15)', color: isOffreActive(o) ? '#22c55e' : '#6b7280', fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20 }}>
+                      {isOffreActive(o) ? 'Active' : 'Expirée'}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                    <div style={{ background: C.accentSoft, color: C.accent, fontWeight: 900, fontSize: 16, padding: '4px 14px', borderRadius: 20 }}>-{o.promo_pct}%</div>
+                    {!o.permanente && o.date_fin && <div style={{ color: C.muted, fontSize: 11 }}>⏰ jusqu'au {fmtDate(o.date_fin)}</div>}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button onClick={() => toggleOffre(o)} style={{
+                      flex: 1, padding: '8px 0', borderRadius: 10,
+                      border: `1px solid ${o.active ? 'rgba(239,68,68,0.3)' : 'rgba(34,197,94,0.3)'}`,
+                      background: o.active ? 'rgba(239,68,68,0.06)' : 'rgba(34,197,94,0.06)',
+                      color: o.active ? '#ef4444' : '#22c55e',
+                      fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit'
+                    }}>
+                      {o.active ? 'Désactiver' : 'Activer'}
+                    </button>
+                    <button onClick={() => { setEditingOffre(o); setView('edit-offre') }} style={{
+                      flex: 1, padding: '8px 0', borderRadius: 10,
+                      border: `1px solid ${C.border}`, background: 'transparent',
+                      color: C.sub, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit'
+                    }}>
+                      ✏️ Modifier
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Onglet Stats */}
+        {dashTab === 'stats' && (
+          <div>
+            {!planHasStats(active?.plan) && (
+              <div style={{ background: 'linear-gradient(135deg,rgba(0,102,255,0.08),rgba(124,58,237,0.08))', border: '1px solid rgba(0,102,255,0.2)', borderRadius: 16, padding: '24px 20px', textAlign: 'center', marginBottom: 16 }}>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>🔒</div>
+                <div style={{ color: C.text, fontWeight: 800, fontSize: 16, marginBottom: 6 }}>Statistiques disponibles en Standard</div>
+                <div style={{ color: C.muted, fontSize: 13, marginBottom: 16, lineHeight: 1.6 }}>Passez en plan Standard pour accéder aux statistiques détaillées.</div>
+              </div>
+            )}
+            {planHasStats(active?.plan) && (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+                  <button onClick={async () => { await loadVisitesPrest(active.id); await loadVues(active.id) }}
+                    style={{ padding: '7px 14px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: '#FFFFFF', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    🔄 Actualiser
+                  </button>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
+                  {[
+                    { l: 'Vues', v: Object.values(vuesMap).reduce((s, n) => s + n, 0), color: '#6B7280' },
+                    { l: 'Visites', v: visites.length, color: '#22C55E' },
+                    { l: 'CA €', v: visites.reduce((s, v) => s + (v.montant_remise || 0), 0).toFixed(0) + '€', color: '#F59E0B' },
+                    { l: 'Éco. €', v: visites.reduce((s, v) => s + ((v.montant_normal || 0) - (v.montant_remise || 0)), 0).toFixed(0) + '€', color: '#22C55E' },
+                  ].map(s => (
+                    <div key={s.l} style={{ background: '#000000', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '10px 6px', textAlign: 'center' }}>
+                      <div style={{ color: '#FFFFFF', fontWeight: 800, fontSize: 20 }}>{s.v}</div>
+                      <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 9, marginTop: 1 }}>{s.l}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <ActivityChart visites={visites} vuesData={vuesData} impressionsData={impressionsData} />
+
+                {visites.length > 0 && (
+                  <>
+                    <div style={{ color: C.sub, fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', margin: '12px 0 8px' }}>Dernières visites</div>
+                    {visites.slice(0, 10).map(v => (
+                      <div key={v.id} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '10px 14px', marginBottom: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <div style={{ color: C.text, fontSize: 13, fontWeight: 600 }}>{v.offres?.titre || 'Offre'}</div>
+                          <div style={{ color: C.muted, fontSize: 11 }}>{new Date(v.created_at).toLocaleDateString('fr-FR')}</div>
+                        </div>
+                        <span style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20 }}>
+                          🎓 Connecté
+                        </span>
+                      </div>
+                    ))}
+                  </>
+                )}
+
+                {planHasIA(active?.plan)
+                  ? <ConseilIA offres={offres} visites={visites} vuesData={vuesData} prestataire={active} />
+                  : <div style={{ background: '#000000', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, padding: '16px 20px', marginTop: 12, textAlign: 'center' }}>
+                    <div style={{ fontSize: 28, marginBottom: 8 }}>🤖</div>
+                    <div style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 14, marginBottom: 4 }}>Conseil <span style={{ color: '#F59E0B' }}>IA</span> disponible en Premium</div>
+                    <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, lineHeight: 1.6 }}>Analyse automatique de vos meilleures offres et recommandations personnalisées.</div>
+                  </div>
+                }
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Onglet Facture */}
+        {dashTab === 'facture' && <FacturePrestataire prestataire={active} visites={visites} />}
+
+        {/* Onglet Profil */}
+        {dashTab === 'profil' && (
+          <div>
+            <div style={{ background: 'linear-gradient(135deg,rgba(0,102,255,0.15),rgba(0,102,255,0.05))', border: '1px solid rgba(0,102,255,0.25)', borderRadius: 16, padding: 16, marginBottom: 12 }}>
+              <div style={{ color: '#FFFFFF', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Abonnement actuel</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                <div style={{ color: '#FFFFFF', fontWeight: 800, fontSize: 16 }}>{planLabel(active.plan, active.plan_fin)}</div>
+                <button onClick={() => setShowChangePwd(showChangePwd === 'plan' ? false : 'plan')} style={{ padding: '6px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.3)', background: 'transparent', color: '#FFFFFF', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  📦 Changer
+                </button>
+              </div>
+              {active.plan_fin && <div style={{ color: '#FFFFFF', fontSize: 12 }}>Expire le {new Date(active.plan_fin).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}</div>}
+            </div>
+
+            {showChangePwd === 'plan' && (
+              <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 12 }}>
+                <ChangementAbonnement
+                  plan={active?.plan} prestataireId={active?.id}
+                  planDebut={active?.plan_debut} hasCard={!!active?.stripe_payment_method_id}
+                  onClose={() => setShowChangePwd(false)}
+                  onChanged={async (newPlan, dateEffet, immédiat) => {
+                    if (immédiat) {
+                      await db().from('prestataires').update({ plan: newPlan, plan_debut: new Date().toISOString() }).eq('id', active.id)
+                      setActive({ ...active, plan: newPlan, plan_debut: new Date().toISOString() })
+                    }
+                    await loadOffres(active.id)
+                    setShowChangePwd(false)
+                    showToast(immédiat ? '✅ Abonnement mis à jour' : `✅ Changement enregistré — effectif le ${dateEffet?.toLocaleDateString('fr-FR')}`)
+                  }}
+                />
+              </div>
+            )}
+
+            {showChangePwd === 'pwd' && (
+              <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 12 }}>
+                <ChangePassword onClose={() => setShowChangePwd(false)} />
+              </div>
+            )}
+
+            <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 16, marginBottom: 12 }}>
+              <EditProfilPrestataire prestataire={active} onSave={updated => setActive(updated)} />
+            </div>
+
+            <StripeSetupCard prestataire={active} onUpdated={updates => setActive(a => ({ ...a, ...updates }))} />
+
+            {!showChangePwd && (
+              <button onClick={() => setShowChangePwd('pwd')} style={{ width: '100%', padding: '9px 0', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: '#FFFFFF', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', marginBottom: 8 }}>
+                🔒 Changer mon mot de passe
+              </button>
+            )}
+            <button onClick={() => setShowCGUPresta(true)} style={{ width: '100%', padding: '9px 0', borderRadius: 10, border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: 'rgba(255,255,255,0.5)', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', marginBottom: 8 }}>
+              📋 Conditions Générales d'Utilisation
+            </button>
+            {showCGUPresta && <ModalCGU onClose={() => setShowCGUPresta(false)} defaultTab="prestataire" />}
+            <Btn variant="outline" onClick={onLogout}>Se déconnecter</Btn>
+          </div>
+        )}
+      </div>
+    </PrestPageShell>
+  )
+}
