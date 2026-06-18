@@ -58,26 +58,26 @@ export default function PrestataireDashboard({ user, onLogout, onHome }) {
   }, [])
 
   const loadPrestataires = async () => {
-  setLoading(true)
-  try {
-    const { data } = await db().from('prestataires').select('*').eq('auth_id', user.id)
-    if (data && data.length > 0) {
-      setActive(data[0])
-      await loadOffres(data[0].id)
-      await loadVisitesPrest(data[0].id)
-      await loadVues(data[0].id)
-    }
-  } catch (e) { console.error(e) }
-  setLoading(false)
-}
+    setLoading(true)
+    try {
+      const { data } = await db().from('prestataires').select('*').eq('auth_id', user.id)
+      if (data && data.length > 0) {
+        setActive(data[0])
+        await loadOffres(data[0].id)
+        await loadVisitesPrest(data[0].id)
+        await loadVues(data[0].id)
+      }
+    } catch (e) { console.error(e) }
+    setLoading(false)
+  }
 
-const loadOffres = async prestId => {
-  const { data } = await db().from('offres')
-    .select('*, visites(id,note,avis,photo_url,statut_avis,created_at,etudiants(prenom))')
-    .eq('prestataire_id', prestId)
-    .order('created_at', { ascending: false })
-  setOffres(data || [])
-}
+  const loadOffres = async prestId => {
+    const { data } = await db().from('offres')
+      .select('*, visites(id,note,avis,photo_url,statut_avis,created_at,etudiants(prenom))')
+      .eq('prestataire_id', prestId)
+      .order('created_at', { ascending: false })
+    setOffres(data || [])
+  }
 
   const loadVisitesPrest = async prestId => {
     const { data } = await db().from('visites')
@@ -317,28 +317,28 @@ const loadOffres = async prestId => {
                       {isOffreActive(o) ? 'Active' : 'Expirée'}
                     </div>
                   </div>
-                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-  <div style={{ background: C.accentSoft, color: C.accent, fontWeight: 900, fontSize: 16, padding: '4px 14px', borderRadius: 20 }}>-{o.promo_pct}%</div>
-  {!o.permanente && o.date_fin && <div style={{ color: C.muted, fontSize: 11 }}>⏰ jusqu'au {fmtDate(o.date_fin)}</div>}
-  {(() => {
-    const avisOffre = (o.visites || []).filter(v => v.statut_avis === 'validé' && v.avis)
-    const noteMoy = avisOffre.filter(v => v.note > 0).reduce((s, v, _, a) => s + v.note / a.length, 0)
-    return avisOffre.length > 0 ? (
-      <button onClick={() => setOffreAvis(o)} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0, marginLeft: 'auto' }}>
-        <span style={{ color: '#F59E0B', fontWeight: 800, fontSize: 13 }}>★ {noteMoy.toFixed(1)}</span>
-        <span style={{ color: C.muted, fontSize: 11 }}>{avisOffre.length} avis ›</span>
-      </button>
-    ) : null
-  })()}
-</div>
-<div style={{ display: 'flex', gap: 8 }}>
-  <button onClick={() => toggleOffre(o)} style={{
-    flex: 1, padding: '8px 0', borderRadius: 10,
-    border: `1px solid ${o.active ? 'rgba(239,68,68,0.3)' : 'rgba(34,197,94,0.3)'}`,
-    background: o.active ? 'rgba(239,68,68,0.06)' : 'rgba(34,197,94,0.06)',
-    color: o.active ? '#ef4444' : '#22c55e',
-    fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit'
-  }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                    <div style={{ background: C.accentSoft, color: C.accent, fontWeight: 900, fontSize: 16, padding: '4px 14px', borderRadius: 20 }}>-{o.promo_pct}%</div>
+                    {!o.permanente && o.date_fin && <div style={{ color: C.muted, fontSize: 11 }}>⏰ jusqu'au {fmtDate(o.date_fin)}</div>}
+                    {(() => {
+                      const avisOffre = (o.visites || []).filter(v => v.statut_avis === 'validé' && v.avis)
+                      const noteMoy = avisOffre.filter(v => v.note > 0).reduce((s, v, _, a) => s + v.note / a.length, 0)
+                      return avisOffre.length > 0 ? (
+                        <div onClick={() => setOffreAvis(o)} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0, marginLeft: 'auto' }}>
+                          <span style={{ color: '#F59E0B', fontWeight: 800, fontSize: 13 }}>★ {noteMoy.toFixed(1)}</span>
+                          <span style={{ color: C.muted, fontSize: 11 }}>{avisOffre.length} avis ›</span>
+                        </div>
+                      ) : null
+                    })()}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button onClick={() => toggleOffre(o)} style={{
+                      flex: 1, padding: '8px 0', borderRadius: 10,
+                      border: `1px solid ${o.active ? 'rgba(239,68,68,0.3)' : 'rgba(34,197,94,0.3)'}`,
+                      background: o.active ? 'rgba(239,68,68,0.06)' : 'rgba(34,197,94,0.06)',
+                      color: o.active ? '#ef4444' : '#22c55e',
+                      fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit'
+                    }}>
                       {o.active ? 'Désactiver' : 'Activer'}
                     </button>
                     <button onClick={() => { setEditingOffre(o); setView('edit-offre') }} style={{
@@ -346,7 +346,6 @@ const loadOffres = async prestId => {
                       border: `1px solid ${C.border}`, background: 'transparent',
                       color: C.sub, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit'
                     }}>
-                     
                       ✏️ Modifier
                     </button>
                   </div>
@@ -534,45 +533,45 @@ const loadOffres = async prestId => {
         )}
       </div>
       {offreAvis && (
-  <div style={{ position: 'fixed', inset: 0, zIndex: 2900, background: C.bg, overflowY: 'auto', paddingBottom: 80 }}>
-    <div style={{ background: C.card, padding: '52px 16px 16px', borderBottom: `1px solid ${C.border}`, position: 'sticky', top: 0, zIndex: 10 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <button onClick={() => setOffreAvis(null)} style={{ background: 'none', border: 'none', color: C.text, cursor: 'pointer', fontSize: 18 }}>←</button>
-        <div>
-          <div style={{ color: C.text, fontWeight: 800, fontSize: 15 }}>{offreAvis.titre}</div>
-          <div style={{ color: C.muted, fontSize: 12 }}>Avis étudiants</div>
-        </div>
-      </div>
-    </div>
-    <div style={{ padding: '16px' }}>
-      {(offreAvis.visites || []).filter(v => v.statut_avis === 'validé' && v.avis).map(v => (
-        <div key={v.id} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: '12px 14px', marginBottom: 10 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <div style={{ color: C.text, fontWeight: 700, fontSize: 13 }}>{v.etudiants?.prenom || 'Étudiant'}</div>
-            <div style={{ display: 'flex', gap: 2 }}>
-              {[1,2,3,4,5].map(i => (
-                <span key={i} style={{ fontSize: 14, color: i <= (v.note || 0) ? '#F59E0B' : '#333' }}>★</span>
-              ))}
+        <div style={{ position: 'fixed', inset: 0, zIndex: 2900, background: C.bg, overflowY: 'auto', paddingBottom: 80 }}>
+          <div style={{ background: C.card, padding: '52px 16px 16px', borderBottom: `1px solid ${C.border}`, position: 'sticky', top: 0, zIndex: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <button onClick={() => setOffreAvis(null)} style={{ background: 'none', border: 'none', color: C.text, cursor: 'pointer', fontSize: 18 }}>←</button>
+              <div>
+                <div style={{ color: C.text, fontWeight: 800, fontSize: 15 }}>{offreAvis.titre}</div>
+                <div style={{ color: C.muted, fontSize: 12 }}>Avis étudiants</div>
+              </div>
             </div>
           </div>
-          <div style={{ color: C.text, fontSize: 13, lineHeight: 1.5, marginBottom: v.photo_url ? 8 : 0 }}>{v.avis}</div>
-          {v.photo_url && (
-            <img src={v.photo_url} alt="photo" style={{ width: '100%', maxHeight: 200, objectFit: 'cover', borderRadius: 10, marginTop: 6 }} />
-          )}
-          <div style={{ color: C.muted, fontSize: 11, marginTop: 6 }}>
-            {new Date(v.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
+          <div style={{ padding: '16px' }}>
+            {(offreAvis.visites || []).filter(v => v.statut_avis === 'validé' && v.avis).map(v => (
+              <div key={v.id} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: '12px 14px', marginBottom: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <div style={{ color: C.text, fontWeight: 700, fontSize: 13 }}>{v.etudiants?.prenom || 'Étudiant'}</div>
+                  <div style={{ display: 'flex', gap: 2 }}>
+                    {[1, 2, 3, 4, 5].map(i => (
+                      <span key={i} style={{ fontSize: 14, color: i <= (v.note || 0) ? '#F59E0B' : '#333' }}>★</span>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ color: C.text, fontSize: 13, lineHeight: 1.5, marginBottom: v.photo_url ? 8 : 0 }}>{v.avis}</div>
+                {v.photo_url && (
+                  <img src={v.photo_url} alt="photo" style={{ width: '100%', maxHeight: 200, objectFit: 'cover', borderRadius: 10, marginTop: 6 }} />
+                )}
+                <div style={{ color: C.muted, fontSize: 11, marginTop: 6 }}>
+                  {new Date(v.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                </div>
+              </div>
+            ))}
+            {(offreAvis.visites || []).filter(v => v.statut_avis === 'validé' && v.avis).length === 0 && (
+              <div style={{ textAlign: 'center', padding: '40px 0', color: C.muted }}>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>💬</div>
+                <div style={{ color: C.text, fontWeight: 700 }}>Aucun avis pour le moment</div>
+              </div>
+            )}
           </div>
         </div>
-      ))}
-      {(offreAvis.visites || []).filter(v => v.statut_avis === 'validé' && v.avis).length === 0 && (
-        <div style={{ textAlign: 'center', padding: '40px 0', color: C.muted }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>💬</div>
-          <div style={{ color: C.text, fontWeight: 700 }}>Aucun avis pour le moment</div>
-        </div>
       )}
-    </div>
-  </div>
-)}
-          </PrestPageShell>
+    </PrestPageShell>
   )
 }

@@ -30,24 +30,43 @@ export default function ModalCadeaux({ etudiant, totalPoints, onClose, onPointsD
     }
     return code
   }
+const reclamer = async () => {
+  console.log('reclamer appelé', selected, etudiant?.id)
+  if (!selected) return setError('Choisissez un partenaire et un palier')
+  setLoading(true); setError('')
+  try {
+    const code = genCode()
+    const { error: e } = await db().from('bons_cadeaux').insert({
+      etudiant_id: etudiant.id,
+      partenaire_id: selected.partenaire.id,
+      montant: selected.palier.montant,
+      points_utilises: selected.palier.pts,
+      code, statut: 'en_attente',
+    })
+    console.log('résultat insert:', e)
+    if (e) { console.error('ERREUR INSERT:', e); throw new Error(e.message) }
 
-  const reclamer = async () => {
-    if (!selected) return setError('Choisissez un partenaire et un palier')
-    setLoading(true); setError('')
+    // Déduire les points
+    const newPoints = Math.max(0, (etudiant.points || 0) - selected.palier.pts)
+    await db().from('etudiants').update({ points: newPoints }).eq('id', etudiant.id)
+
+    // Mettre à jour le localStorage
     try {
-      const code = genCode()
-      const { error: e } = await db().from('bons_cadeaux').insert({
-        etudiant_id: etudiant.id,
-        partenaire_id: selected.partenaire.id,
-        montant: selected.palier.montant,
-        points_utilises: selected.palier.pts,
-        code, statut: 'en_attente',
-      })
-      if (e) throw new Error(e.message)
-      setBonCode(code)
-    } catch (e) { setError(e.message) }
-    setLoading(false)
-  }
+      const s = localStorage.getItem('stu10_etudiant')
+      if (s) {
+        const et = JSON.parse(s)
+        et.points = newPoints
+        localStorage.setItem('stu10_etudiant', JSON.stringify(et))
+      }
+    } catch (ex) {}
+
+    setBonCode(code)
+    setStep('succes')
+    if (onPointsDeduits) onPointsDeduits(newPoints)
+  } catch (e) { setError(e.message) }
+  setLoading(false)
+}
+  
 
   return (
     <div style={{
