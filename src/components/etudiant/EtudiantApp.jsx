@@ -19,6 +19,7 @@ import ModalCadeaux from './ModalCadeaux.jsx'
 import ModalSuggestion from './ModalSuggestion.jsx'
 import ModalCGU from '../ui/ModalCGU.jsx'
 import ChangePassword from '../ui/ChangePassword.jsx'
+import ModalPointsCadeaux from '../ui/ModalPointsCadeaux.jsx'
 
 // ── SVG Icons ─────────────────────────────────────────
 const IcoListe = ({ active }) => (
@@ -238,6 +239,7 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
   const [vuesEtudiant, setVuesEtudiant] = useState([])
   const [drillKpi, setDrillKpi] = useState(null)
   const { offres, loading } = useOffres(city, userLocation)
+  const [showModal, setShowModal] = useState(false)
 
   useEffect(() => {
     navigator.geolocation?.getCurrentPosition(
@@ -715,7 +717,7 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
           {viewMode === 'list' ? <IcoListe active={true} /> : <IcoCarte active={true} />}
           <span style={{ color: '#0066FF' }}>{viewMode === 'list' ? 'Liste' : 'Carte'}</span>
         </button>
-        <button className="siok-bottom-btn" style={{ flex: 1.2 }} onClick={() => setShowCadeaux(true)}>
+        <button className="siok-bottom-btn" style={{ flex: 1.2 }} onClick={() => setShowModal(true)}>
           <SIOKLogo size="sm" />
           <span style={{ fontSize: 9, color: '#9CA3AF', marginTop: 1 }}>StuD</span>
         </button>
@@ -726,6 +728,12 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
           </span>
         </button>
       </div>
+      {showModal && (
+  <ModalPointsCadeaux
+    onClose={() => setShowModal(false)}
+    onConnecte={() => setShowModal(false)}
+  />
+)}
     </div>
   )
 }

@@ -11,6 +11,7 @@ import MapContainer from './MapContainer.jsx'
 import NavFiltres from '../etudiant/NavFiltres.jsx'
 import OffreDetail from '../offres/OffreDetail.jsx'
 import ModalSuggestion from '../etudiant/ModalSuggestion.jsx'
+import ModalPointsCadeaux from '../ui/ModalPointsCadeaux.jsx'
 
 // ── SVG Icons ──────────────────────────────────────────
 const IcoListe = ({ active }) => (
@@ -154,6 +155,7 @@ export default function MapExplorer({ onConnecte, onPrestataire }) {
   const [showChoixProfil, setShowChoixProfil] = useState(false)
   const [showFavoriMsg, setShowFavoriMsg] = useState(false)
   const [showSuggestion, setShowSuggestion] = useState(false)
+  const [showModal, setShowModal] = useState(false)
   const [showReco, setShowReco] = useState(false)
   const [search, setSearch] = useState('')
   const listRef = useRef(null)
@@ -335,13 +337,21 @@ export default function MapExplorer({ onConnecte, onPrestataire }) {
 
       {showSuggestion && <ModalSuggestion nom={null} type="etudiant_anon" onClose={() => setShowSuggestion(false)} />}
 
+      {/* Modal points cadeaux */}
+      {showModal && (
+        <ModalPointsCadeaux
+          onClose={() => setShowModal(false)}
+          onConnecte={() => { setShowModal(false); setShowChoixProfil(true) }}
+        />
+      )}
+
       {/* Bottom bar */}
       <div className="siok-bottom-bar" style={{ zIndex: 3100 }}>
         <button className="siok-bottom-btn active" onClick={() => setViewMode(viewMode === 'list' ? 'map' : 'list')}>
           {viewMode === 'list' ? <IcoListe active={true} /> : <IcoCarte active={true} />}
           <span style={{ color: '#0066FF' }}>{viewMode === 'list' ? 'Liste' : 'Carte'}</span>
         </button>
-        <button className="siok-bottom-btn" style={{ flex: 1.2 }}>
+        <button className="siok-bottom-btn" style={{ flex: 1.2 }} onClick={() => setShowModal(true)}>
           <SIOKLogo size="sm" />
           <span style={{ fontSize: 9, color: '#9CA3AF', marginTop: 1 }}>StuD</span>
         </button>
