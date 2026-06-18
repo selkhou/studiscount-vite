@@ -59,7 +59,10 @@ export default function QRScanner({ prestataireId, onScanned, onClose }) {
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
 
     if (window.jsQR) {
-      const code = window.jsQR(imageData.data, imageData.width, imageData.height)
+      console.log('jsQR disponible')
+      const code = window.jsQR(imageData.data, imageData.width, imageData.height, {
+        inversionAttempts: 'dontInvert'
+      })
       if (code) {
         handleQRCode(code.data)
         return
