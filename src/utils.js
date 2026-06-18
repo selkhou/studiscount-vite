@@ -168,8 +168,9 @@ export function genQRToken(offreId, etudiantId, ts) {
 
 export function genQRData(offreId, etudiantId) {
   const ts = Date.now()
+  const exp = ts + 4 * 60 * 1000 // 4 minutes
   const token = genQRToken(offreId, etudiantId, ts)
-  return JSON.stringify({ offreId, etudiantId, ts, token })
+  return JSON.stringify({ offreId, etudiantId, ts, exp, token })
 }
 
 export function validateQRData(data) {
