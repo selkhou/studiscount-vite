@@ -1,4 +1,4 @@
-import { CS, ICON_STYLE } from '../../constants.js'
+import { CS } from '../../constants.js'
 import { buildCategoriesOffre, getTypesForCategorie } from '../../utils.js'
 import CatIcon from '../ui/CatIcon.jsx'
 import IcoBarberPole from '../ui/IcoBarberPole.jsx'
@@ -41,11 +41,11 @@ export default function NavFiltres({
   })
 
   const modes = [
-    { key: 'distance',  label: 'Proche', icon: '🎯' },
-    { key: 'remise',    label: 'Éco',    icon: '💶' },
-    { key: 'remisePct', label: '% Éco',  icon: '💯' },
-    { key: 'pop',       label: 'Pop',    icon: '🔥' },
-    { key: 'notes',     label: 'Notés',  icon: '⭐' },
+    { key: 'distance', label: 'Proche', emoji: '🎯' },
+    { key: 'remise', label: 'Éco', emoji: '💶' },
+    { key: 'remisePct', label: '% Éco', emoji: '💯' },
+    { key: 'pop', label: 'Pop', emoji: '🔥' },
+    { key: 'notes', label: 'Notés', emoji: '⭐' },
   ]
   const currentIdx = showReco === 'pop' ? 3 : tri === 'notes' ? 4 : tri === 'remisePct' ? 2 : tri === 'remise' ? 1 : 0
   const current = modes[currentIdx]
@@ -63,7 +63,7 @@ export default function NavFiltres({
       {/* Ligne 1 — tri + catégories */}
       <div style={{ display: 'flex', gap: 5, overflowX: 'auto', paddingBottom: 6, alignItems: 'center', paddingTop: 4 }}>
         <button onClick={handleCycle} style={PILL(false)}>
-          <span style={{ fontSize: 18, lineHeight: 1 }}>{current.icon}</span>
+          <span style={{ fontSize: 22, lineHeight: 1 }}>{current.emoji}</span>
           <span style={{ fontSize: 14, fontWeight: 800, color: tri === 'notes' ? '#F59E0B' : '#374151' }}>
             {current.label}
           </span>
@@ -71,7 +71,7 @@ export default function NavFiltres({
 
         {showPerso && (
           <button onClick={() => setShowReco(showReco === 'perso' ? false : 'perso')} style={PILL(showReco === 'perso')}>
-            <span style={{ fontSize: 18, lineHeight: 1 }}>✨</span>
+            <span style={{ fontSize: 22, lineHeight: 1 }}>✨</span>
             <span style={{ fontSize: 14, fontWeight: 800, color: showReco === 'perso' ? '#0066FF' : '#374151' }}>
               Pour toi
             </span>
@@ -96,26 +96,17 @@ export default function NavFiltres({
 
       {/* Ligne 2 — recherche + sous-catégories */}
       <div style={{ display: 'flex', gap: 5, overflowX: 'auto', paddingTop: 4, paddingBottom: 4, alignItems: 'center' }}>
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          background: '#FFFFFF', borderRadius: 50, padding: '6px 12px',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.08)', flexShrink: 0, minWidth: 120
-        }}>
-          <span style={{ fontSize: 14, color: '#9CA3AF' }}>🔍</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#FFFFFF', borderRadius: 50, padding: '6px 12px', boxShadow: '0 1px 4px rgba(0,0,0,0.08)', flexShrink: 0, minWidth: 120 }}>
+          <svg width="16" height="16" viewBox="0 -960 960 960" fill="#9CA3AF">
+            <path d="M784-120 532-372q-30 24-69 38t-83 14q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l252 252-56 56ZM380-400q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z" />
+          </svg>
           <input
             value={search || ''} onChange={e => setSearch(e.target.value)}
             placeholder="Rechercher..."
-            style={{
-              border: 'none', outline: 'none', fontSize: 13,
-              background: 'transparent', width: 90,
-              fontFamily: 'inherit', color: '#1A1A2E'
-            }}
+            style={{ border: 'none', outline: 'none', fontSize: 13, background: 'transparent', width: 90, fontFamily: 'inherit', color: '#1A1A2E' }}
           />
           {search && (
-            <button onClick={() => setSearch('')} style={{
-              border: 'none', background: 'transparent',
-              cursor: 'pointer', color: '#9CA3AF', fontSize: 14, padding: 0, lineHeight: 1
-            }}>✕</button>
+            <button onClick={() => setSearch('')} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#9CA3AF', fontSize: 14, padding: 0, lineHeight: 1 }}>✕</button>
           )}
         </div>
 
