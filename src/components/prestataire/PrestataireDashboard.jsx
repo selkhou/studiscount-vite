@@ -18,6 +18,7 @@ import EditProfilPrestataire from './EditProfilPrestataire.jsx'
 import ActivityChart from './ActivityChart.jsx'
 import FacturePrestataire from './FacturePrestataire.jsx'
 import ConseilIA from './ConseilIA.jsx'
+import BoutonSuggestion from '../ui/BoutonSuggestion.jsx'
 
 export default function PrestataireDashboard({ user, onLogout, onHome }) {
   const C = getC()
@@ -190,27 +191,28 @@ export default function PrestataireDashboard({ user, onLogout, onHome }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
             <div style={{ fontSize: 28 }}>{type.emoji}</div>
             <div style={{ flex: 1 }}>
-  
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-  <div style={{ color: C.text, fontWeight: 800, fontSize: 16 }}>{active.nom}</div>
-  <div style={{
-    background: active.plan?.includes('premium') ? 'rgba(124,58,237,0.15)' :
-      active.plan?.includes('standard') ? 'rgba(0,102,255,0.15)' :
-      active.plan === 'trial' ? 'rgba(34,197,94,0.15)' : 'rgba(107,114,128,0.15)',
-    color: active.plan?.includes('premium') ? '#7C3AED' :
-      active.plan?.includes('standard') ? '#0066FF' :
-      active.plan === 'trial' ? '#22C55E' : '#6B7280',
-    fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20,
-    whiteSpace: 'nowrap'
-  }}>
-    {active.plan === 'trial' ? '🎁 Essai' :
-      active.plan?.includes('standard') ? '📊 Standard' :
-      active.plan?.includes('premium') ? '👑 Premium' : '🔧 Base'}
-    {active.plan_fin && ` · ${new Date(active.plan_fin) < new Date() ? '⚠️ Expiré' : `fin ${new Date(active.plan_fin).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}`}`}
-  </div>
-</div>
-<div style={{ color: C.muted, fontSize: 12 }}>{type.label} · {active.ville}</div>
-            </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <div style={{ color: C.text, fontWeight: 800, fontSize: 16 }}>{active.nom}</div>
+                <div style={{
+                  background: active.plan?.includes('premium') ? 'rgba(124,58,237,0.15)' :
+                    active.plan?.includes('standard') ? 'rgba(0,102,255,0.15)' :
+                      active.plan === 'trial' ? 'rgba(34,197,94,0.15)' : 'rgba(107,114,128,0.15)',
+                  color: active.plan?.includes('premium') ? '#7C3AED' :
+                    active.plan?.includes('standard') ? '#0066FF' :
+                      active.plan === 'trial' ? '#22C55E' : '#6B7280',
+                  fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20,
+                  whiteSpace: 'nowrap'
+                }}>
+                  {active.plan === 'trial' ? '🎁 Essai' :
+                    active.plan?.includes('standard') ? '📊 Standard' :
+                      active.plan?.includes('premium') ? '👑 Premium' : '🔧 Base'}
+                  {active.plan_fin && ` · ${new Date(active.plan_fin) < new Date() ? '⚠️ Expiré' : `fin ${new Date(active.plan_fin).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}`}`}
+                </div>
+              </div>
+              <div style={{ color: C.muted, fontSize: 12 }}>{type.label} · {active.ville}</div>
+             </div>
+             <BoutonSuggestion nom={active.nom} type="prestataire" />
+        
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             {[

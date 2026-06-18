@@ -1,71 +1,57 @@
 import { useState } from 'react'
-import { CS } from '../../constants.js'
 import { db } from '../../lib/supabase.js'
-import StudentFInput from './StudentFInput.jsx'
-import StudentBtn from './StudentBtn.jsx'
 
 export default function ChangePassword({ onClose }) {
   const [pwd, setPwd] = useState('')
   const [pwd2, setPwd2] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [done, setDone] = useState(false)
+  const [showPwd, setShowPwd] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [msg, setMsg] = useState('')
 
-  async function handleSubmit() {
-    setError('')
-    if (pwd.length < 8) { setError('8 caractères minimum'); return }
-    if (pwd !== pwd2) { setError('Les mots de passe ne correspondent pas'); return }
-    setLoading(true)
+  const save = async () => {
+    if (pwd.length < 8) return setMsg('❌ 8 caractères minimum')
+    if (pwd !== pwd2) return setMsg('❌ Les mots de passe ne correspondent pas')
+    setSaving(true); setMsg('')
     try {
-      const { error: e } = await db().auth.updateUser({ password: pwd })
-      if (e) { setError(e.message); return }
-      setDone(true)
-    } catch (e) {
-      setError(e.message)
-    }
-    setLoading(false)
+      const { error } = await db().auth.updateUser({ password: pwd })
+      if (error) throw error
+      setMsg('✅ Mot de passe mis à jour !')
+      setTimeout(() => onClose(), 1500)
+    } catch (e) { setMsg('❌ ' + e.message) }
+    setSaving(false)
   }
-
-  if (done) return (
-    <div style={{ textAlign: 'center' }}>
-      <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
-      <div style={{ color: CS.text, fontSize: 16, fontWeight: 700, marginBottom: 8 }}>
-        Mot de passe modifié
-      </div>
-      <StudentBtn onClick={onClose}>Continuer</StudentBtn>
-    </div>
-  )
 
   return (
     <div>
-      <StudentFInput
-        label="Nouveau mot de passe"
-        type="password"
-        value={pwd}
-        onChange={setPwd}
-        placeholder="8 caractères minimum"
-        required
-      />
-      <StudentFInput
-        label="Confirmer le mot de passe"
-        type="password"
-        value={pwd2}
-        onChange={setPwd2}
-        placeholder="Répète le mot de passe"
-        required
-      />
-      {error && (
-        <div style={{
-          color: CS.red, fontSize: 13, marginBottom: 12,
-          background: 'rgba(239,68,68,0.08)',
-          padding: '8px 12px', borderRadius: 8
-        }}>
-          {error}
+      <div style={{ position: 'relative', marginBottom: 10 }}>
+        <input
+          type={showPwd ? 'text' : 'password'}
+          value={pwd} onChange={e => setPwd(e.target.value)}
+          placeholder="Nouveau mot de passe (8 car. min)"
+          style={{ width: '100%', padding: '12px 44px 12px 14px', borderRadius: 12, border: '1.5px solid #E5E7EB', fontSize: 13, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+        />
+        <button onClick={() => setShowPwd(!showPwd)} type="button"
+          style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: '#9CA3AF' }}>
+          {showPwd ? '🙈' : '👁️'}
+        </button>
+      </div>
+      <div style={{ position: 'relative', marginBottom: 12 }}>
+        <input
+          type={showPwd ? 'text' : 'password'}
+          value={pwd2} onChange={e => setPwd2(e.target.value)}
+          placeholder="Confirmer le mot de passe"
+          style={{ width: '100%', padding: '12px 14px', borderRadius: 12, border: '1.5px solid #E5E7EB', fontSize: 13, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+        />
+      </div>
+      {msg && (
+        <div style={{ fontSize: 12, color: msg.startsWith('✅') ? '#22C55E' : '#EF4444', marginBottom: 10 }}>
+          {msg}
         </div>
       )}
-      <StudentBtn onClick={handleSubmit} loading={loading}>
-        Changer le mot de passe
-      </StudentBtn>
+      <button onClick={save} disabled={saving}
+        style={{ width: '100%', padding: '12px', borderRadius: 12, border: 'none', background: '#0066FF', color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+        {saving ? '...' : 'Enregistrer'}
+      </button>
     </div>
   )
 }
