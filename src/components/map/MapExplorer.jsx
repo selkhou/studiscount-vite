@@ -265,18 +265,21 @@ export default function MapExplorer({ onConnecte, onPrestataire }) {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
         {/* Carte */}
-        {viewMode === 'map' && window.LANDING_MODE && (
+        {viewMode === 'map' && !window.LANDING_MODE && (
           <div style={{ position: 'fixed', top: 120, left: 0, right: 0, bottom: 64, zIndex: 1 }}>
-            <MapContainer offres={filtered} selected={null}
-              onSelect={() => { }}
+            <MapContainer offres={filtered} selected={selected}
+              onSelect={o => {
+                setSelected(o)
+              }}
               city={city} userLocation={userLocation} />
           </div>
         )}
 
         {viewMode === 'map' && window.LANDING_MODE && (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12, padding: 32, background: '#F8FAFC' }}>
-            <div style={{ fontSize: 48 }}>🗺️</div>
-            <div style={{ color: '#6B7280', fontSize: 14, fontWeight: 600, textAlign: 'center' }}>La carte est disponible<br />après inscription</div>
+          <div style={{ position: 'fixed', top: 120, left: 0, right: 0, bottom: 64, zIndex: 1 }}>
+            <MapContainer offres={filtered} selected={null}
+              onSelect={() => { }}
+              city={city} userLocation={userLocation} />
           </div>
         )}
 
@@ -498,7 +501,7 @@ export default function MapExplorer({ onConnecte, onPrestataire }) {
       {/* Bottom bar */}
       <div className="siok-bottom-bar" style={{ zIndex: 3100 }}>
         <button className="siok-bottom-btn active"
-        onClick={() => setViewMode(viewMode === 'list' ? 'map' : 'list')}>
+          onClick={() => setViewMode(viewMode === 'list' ? 'map' : 'list')}>
           {viewMode === 'list' ? <IcoListe active={true} /> : <IcoCarte active={true} />}
           <span style={{ color: window.LANDING_MODE ? '#9CA3AF' : '#0066FF' }}>{viewMode === 'list' ? 'Liste' : 'Carte'}</span>
         </button>
