@@ -11,6 +11,7 @@ export default function ModalCadeaux({ etudiant, totalPoints, onClose, onPointsD
   const [partenaires, setPartenaires] = useState([])
   const [selected, setSelected] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [step, setStep] = useState('seuils')
   const [bonCode, setBonCode] = useState(null)
   const [error, setError] = useState('')
 
@@ -31,10 +32,19 @@ export default function ModalCadeaux({ etudiant, totalPoints, onClose, onPointsD
     return code
   }
 const reclamer = async () => {
-  console.log('reclamer appelé', selected, etudiant?.id)
   if (!selected) return setError('Choisissez un partenaire et un palier')
   setLoading(true); setError('')
   try {
+    // Vérifier les points actuels en DB (pas depuis le state qui peut être périmé)
+    const { data: etData } = await db().from('etudiants').select('points').eq('id', etudiant.id).single()
+    const pointsActuels = etData?.points || 0
+
+    if (pointsActuels < selected.palier.pts) {
+      setError(`Points insuffisants — vous avez ${pointsActuels} pts, il faut ${selected.palier.pts} pts`)
+      setLoading(false)
+      return
+    }
+
     const code = genCode()
     const { error: e } = await db().from('bons_cadeaux').insert({
       etudiant_id: etudiant.id,
@@ -43,11 +53,10 @@ const reclamer = async () => {
       points_utilises: selected.palier.pts,
       code, statut: 'en_attente',
     })
-    console.log('résultat insert:', e)
-    if (e) { console.error('ERREUR INSERT:', e); throw new Error(e.message) }
+    if (e) throw new Error(e.message)
 
-    // Déduire les points
-    const newPoints = Math.max(0, (etudiant.points || 0) - selected.palier.pts)
+    // Déduire les points depuis la valeur DB
+    const newPoints = Math.max(0, pointsActuels - selected.palier.pts)
     await db().from('etudiants').update({ points: newPoints }).eq('id', etudiant.id)
 
     // Mettre à jour le localStorage
@@ -71,7 +80,7 @@ const reclamer = async () => {
   return (
     <div style={{
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
-      zIndex: 2900, display: 'flex', flexDirection: 'column',
+      zIndex: 3200, display: 'flex', flexDirection: 'column',
       justifyContent: 'flex-end', paddingBottom: 64
     }} onClick={onClose}>
       <div style={{

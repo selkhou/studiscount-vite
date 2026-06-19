@@ -355,6 +355,13 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
   const { offres, loading } = useOffres(city, userLocation)
   const [showModal, setShowModal] = useState(false)
   const [showMesBons, setShowMesBons] = useState(false)
+  const [points, setPoints] = useState(() => {
+    try {
+      const s = localStorage.getItem('stu10_etudiant')
+      if (s) return JSON.parse(s).points || 0
+    } catch (e) { }
+    return etudiant?.points || 0
+  })
 
   useEffect(() => {
     navigator.geolocation?.getCurrentPosition(
@@ -367,7 +374,10 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
   }, [])
 
   useEffect(() => {
-    if (profileTab === 'Mes points') loadVisites()
+    if (profileTab === 'Mes points') {
+      loadVisites()
+      refreshPoints()
+    }
   }, [profileTab])
 
   const loadVisites = async () => {
@@ -378,6 +388,22 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
       .order('created_at', { ascending: false })
       .limit(50)
     if (data) setVisites(data)
+  }
+
+  const refreshPoints = async () => {
+    if (!etudiant?.id) return
+    const { data } = await db().from('etudiants').select('points').eq('id', etudiant.id).single()
+    if (data) {
+      setPoints(data.points || 0)
+      try {
+        const s = localStorage.getItem('stu10_etudiant')
+        if (s) {
+          const et = JSON.parse(s)
+          et.points = data.points
+          localStorage.setItem('stu10_etudiant', JSON.stringify(et))
+        }
+      } catch (e) { }
+    }
   }
 
   const loadVuesEtudiant = async () => {
@@ -434,13 +460,7 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
 
   const offresAffichees = tab === 'favoris' ? offres.filter(o => favIds.has(o.id)) : filtered
 
-  const totalPoints = (() => {
-    try {
-      const s = localStorage.getItem('stu10_etudiant')
-      if (s) { const e = JSON.parse(s); return e.points || 0 }
-    } catch (ex) { }
-    return etudiant?.points || 0
-  })()
+  const totalPoints = points
 
   return (
     <div style={{ minHeight: '100vh', background: fondPerso || window.SIOK_PARAMS?.fond_couleur || '#F5F5F5', display: 'flex', flexDirection: 'column' }}>
@@ -631,14 +651,18 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
 
       {/* QR Generator */}
       {showQR && qrOffre && (
-        <QRGenerator offre={qrOffre} etudiant={etudiant} onClose={() => { setShowQR(false); setQrOffre(null) }} />
+        <QRGenerator offre={qrOffre} etudiant={etudiant} onClose={async () => { setShowQR(false); setQrOffre(null); await refreshPoints(); await loadVisites() }} />
       )}
-
-      {/* Modal cadeaux */}
+{/* Modal cadeaux */}
       {showCadeaux && (
         <ModalCadeaux etudiant={etudiant} totalPoints={totalPoints}
           onClose={() => setShowCadeaux(false)}
-          onPointsDeduits={() => loadVisites()} />
+          onPointsDeduits={async (newPoints) => {
+            console.log('onPointsDeduits appelé avec:', newPoints)
+            if (newPoints !== undefined) setPoints(newPoints)
+            else await refreshPoints()
+            await loadVisites()
+          }} />
       )}
       {/* Mes bons cadeaux */}
       {showMesBons && (
@@ -795,12 +819,12 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
                   🎟️ Mes bons cadeaux
                 </button>
                 {totalPoints >= 250 && (
-                  <button onClick={() => { setShowProfile(false); setShowCadeaux(true) }}
+                  <button onClick={() => setShowCadeaux(true)}
                     style={{ width: '100%', marginBottom: 12, padding: '12px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg,#F59E0B,#FBBF24)', color: 'white', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' }}>
                     🎁 Réclamer un bon cadeau
                   </button>
                 )}
-                <button onClick={loadVisites} style={{ width: '100%', marginBottom: 12, padding: '8px', borderRadius: 10, border: '1px solid #E5E7EB', background: '#F8F8F8', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, color: '#6B7280' }}>
+                <button onClick={async () => { await loadVisites(); await refreshPoints() }} style={{ width: '100%', marginBottom: 12, padding: '8px', borderRadius: 10, border: '1px solid #E5E7EB', background: '#F8F8F8', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, color: '#6B7280' }}>
                   🔄 Actualiser
                 </button>
                 {visites.map(v => (
