@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import SondageBanniere from '../sondage/SondageBanniere.jsx'
 import { CS } from '../../constants.js'
 import { db } from '../../lib/supabase.js'
 import {
@@ -841,6 +842,9 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
           </div>
         </div>
       )}
+
+      {/* Bannière sondage production */}
+      <SondageBanniere etudiantId={etudiant?.id} />
 
       {/* Bottom bar */}
       <div className="siok-bottom-bar" style={{ zIndex: 3100 }}>

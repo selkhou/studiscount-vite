@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import SondageBanniere from '../sondage/SondageBanniere.jsx'
 import { CS, CITIES } from '../../constants.js'
 import { db } from '../../lib/supabase.js'
 import {
@@ -508,6 +509,9 @@ export default function MapExplorer({ onConnecte, onPrestataire }) {
           )}
         </div>
       )}
+
+      {/* Bannière sondage production — hors landing uniquement */}
+      {!landingBanner && <SondageBanniere etudiantId={null} />}
 
       {/* Bottom bar */}
       <div className="siok-bottom-bar" style={{ zIndex: 3100 }}>
