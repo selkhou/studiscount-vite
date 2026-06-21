@@ -214,7 +214,18 @@ export default function MapExplorer({ onConnecte, onPrestataire }) {
     )
     if (window.LANDING_MODE) {
       db().auth.signOut().then(() => { })
-      db().from('scans_landing').insert({ reponse: 'scan' }).then(() => { })
+      const insertScan = async () => {
+        let lat = null, lng = null
+        try {
+          const pos = await new Promise((res, rej) =>
+            navigator.geolocation.getCurrentPosition(res, rej, { timeout: 5000 })
+          )
+          lat = pos.coords.latitude
+          lng = pos.coords.longitude
+        } catch (e) { }
+        await db().from('scans_landing').insert({ reponse: 'scan', lat, lng })
+      }
+      insertScan()
     }
   }, [])
 
