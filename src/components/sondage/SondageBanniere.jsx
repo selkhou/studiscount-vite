@@ -8,6 +8,7 @@ export default function SondageBanniere({ etudiantId = null }) {
   const [questions, setQuestions] = useState([])
   const [visible, setVisible] = useState(false)
   const [repond, setRepond] = useState(false)
+  console.log('SondageBanniere monté en prod')
 
   useEffect(() => {
     // Déjà vu cette session → on n'affiche pas
