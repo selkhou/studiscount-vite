@@ -23,11 +23,12 @@ export default function SondageBanniere({ etudiantId = null }) {
         console.log('sondage actif:', s)
       if (!s) return
 
-      const { data: q } = await db()
-        .from('questions_sondage')
-        .select('id,question,ordre')
-        .eq('sondage_id', s.id)
-        .order('ordre')
+const { data: q, error: qError } = await db()
+  .from('questions_sondage')
+  .select('id,question,ordre')
+  .eq('sondage_id', s.id)
+  .order('ordre')
+console.log('questions:', q, 'error:', qError)
 
       if (!q || q.length === 0) return
 
