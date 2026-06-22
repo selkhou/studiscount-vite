@@ -423,8 +423,11 @@ export default function PrestataireDashboard({ user, onLogout, onHome }) {
                         const fmt = v => isCurrency ? v.toFixed(2) + ' €' : v
                         return (
                           <div style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid rgba(255,255,255,0.1)`, borderRadius: 12, padding: '12px 14px', marginBottom: 12 }}>
-                            <div style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 12, marginBottom: 4 }}>{titles[activeKpi]} — 6 derniers mois</div>
-                            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, marginBottom: 12 }}>{fmt(total)} {isCurrency ? '' : `${titles[activeKpi].toLowerCase()}`}</div>
+                            <div style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 12, marginBottom: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span>{titles[activeKpi]} — 6 derniers mois</span>
+                              <span style={{ color: '#4D9EFF', fontSize: 10, fontWeight: 700 }}>EN COURS : {fmt(parMois[0].nb)}</span>
+                            </div>
+                            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, marginBottom: 12 }}>Total : {fmt(total)}</div>
                             {/* Graphe barres */}
                             <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end', height: 60, marginBottom: 12 }}>
                               {/* Barre TOTAL */}
@@ -435,7 +438,6 @@ export default function PrestataireDashboard({ user, onLogout, onHome }) {
                               </div>
                               {parMois.map((m, i) => (
                                 <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-                                  {m.isCurrent && <div style={{ color: '#4D9EFF', fontSize: 8, fontWeight: 700 }}>EN COURS</div>}
                                   <div style={{ color: m.isCurrent ? '#4D9EFF' : 'rgba(255,255,255,0.6)', fontSize: 10, fontWeight: 700 }}>{fmt(m.nb)}</div>
                                   <div style={{ width: '100%', background: m.isCurrent ? '#4D9EFF' : color, borderRadius: '3px 3px 0 0', height: `${Math.max(3, m.nb / maxM * 50)}px` }} />
                                   <div style={{ color: m.isCurrent ? '#4D9EFF' : 'rgba(255,255,255,0.4)', fontSize: 9 }}>{m.label}</div>
