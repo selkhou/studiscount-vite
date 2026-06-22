@@ -423,11 +423,10 @@ export default function PrestataireDashboard({ user, onLogout, onHome }) {
                         const fmt = v => isCurrency ? v.toFixed(2) + ' €' : v
                         return (
                           <div style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid rgba(255,255,255,0.1)`, borderRadius: 12, padding: '12px 14px', marginBottom: 12 }}>
-                            <div style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 12, marginBottom: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 12, marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                               <span>{titles[activeKpi]} — 6 derniers mois</span>
-                              <span style={{ color: '#4D9EFF', fontSize: 10, fontWeight: 700 }}>EN COURS : {fmt(parMois[0].nb)}</span>
+                              <span style={{ color: '#4D9EFF', fontSize: 10, fontWeight: 700 }}>EN COURS</span>
                             </div>
-                            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, marginBottom: 12 }}>Total : {fmt(total)}</div>
                             {/* Graphe barres */}
                             <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end', height: 60, marginBottom: 12 }}>
                               {/* Barre TOTAL */}
