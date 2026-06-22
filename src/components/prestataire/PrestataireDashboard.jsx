@@ -17,7 +17,7 @@ import ChangementAbonnement from './ChangementAbonnement.jsx'
 import EditProfilPrestataire from './EditProfilPrestataire.jsx'
 import ActivityChart from './ActivityChart.jsx'
 import FacturePrestataire from './FacturePrestataire.jsx'
-import ConseilIA from './ConseilIA.jsx'
+import ConseilIA from './ConseilIA.jsx' // conservé pour usage futur
 import BoutonSuggestion from '../ui/BoutonSuggestion.jsx'
 
 export default function PrestataireDashboard({ user, onLogout, onHome }) {
@@ -36,6 +36,7 @@ export default function PrestataireDashboard({ user, onLogout, onHome }) {
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState(null)
   const [dashTab, setDashTab] = useState('offres')
+  const [activeKpi, setActiveKpi] = useState(null)
   const [bgColor, setBgColor] = useState(window.SIOK_PARAMS?.fond_couleur_presta || '#0C0D0F')
   const [headerColor, setHeaderColor] = useState(window.SIOK_PARAMS?.fond_header_presta || null)
   const activeRef = useRef(null)
@@ -374,21 +375,141 @@ export default function PrestataireDashboard({ user, onLogout, onHome }) {
                   </button>
                 </div>
 
-                {/* KPIs 5 colonnes */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
-                  {[
-                    { l: 'Impr.', v: Object.values(impressionsMap).reduce((s, n) => s + n, 0), color: '#9CA3AF' },
-                    { l: 'Vues', v: Object.values(vuesMap).reduce((s, n) => s + n, 0), color: '#6B7280' },
-                    { l: 'Honorées', v: visites.length, color: '#22C55E' },
-                    { l: 'CA €', v: visites.reduce((s, v) => s + (v.montant_remise || 0), 0).toFixed(0) + '€', color: '#F59E0B' },
-                    { l: 'Éco. €', v: visites.reduce((s, v) => s + ((v.montant_normal || 0) - (v.montant_remise || 0)), 0).toFixed(0) + '€', color: '#22C55E' },
-                  ].map(s => (
-                    <div key={s.l} style={{ background: '#000000', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '10px 6px', textAlign: 'center' }}>
-                      <div style={{ color: '#FFFFFF', fontWeight: 800, fontSize: 20 }}>{s.v}</div>
-                      <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 9, marginTop: 1 }}>{s.l}</div>
-                    </div>
-                  ))}
-                </div>
+                {/* KPIs 5 colonnes cliquables */}
+                {(() => {
+                  const nbOffresTotal = offres.length
+                  const nbOffresActives = offres.filter(o => isOffreActive(o)).length
+                  const kpis = [
+                    { id: 'impr', l: 'Impr.', v: Object.values(impressionsMap).reduce((s, n) => s + n, 0), color: '#9CA3AF' },
+                    { id: 'vues', l: 'Vues', v: Object.values(vuesMap).reduce((s, n) => s + n, 0), color: '#6B7280' },
+                    { id: 'honorees', l: 'Honorées', v: visites.length, color: '#22C55E' },
+                    { id: 'ca', l: 'CA €', v: visites.reduce((s, v) => s + (v.montant_remise || 0), 0).toFixed(0) + '€', color: '#F59E0B' },
+                    { id: 'offres', l: 'Offres', v: `${nbOffresTotal}`, sub: `${nbOffresActives} active${nbOffresActives !== 1 ? 's' : ''}`, color: '#0066FF' },
+                  ]
+                  return (
+                    <>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
+                        {kpis.map(k => (
+                          <div key={k.id} onClick={() => setActiveKpi(activeKpi === k.id ? null : k.id)}
+                            style={{ background: activeKpi === k.id ? 'rgba(255,255,255,0.08)' : '#000000', border: activeKpi === k.id ? `1px solid ${k.color}` : '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '10px 6px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.15s' }}>
+                            <div style={{ color: k.color, fontWeight: 800, fontSize: 18 }}>{k.v}</div>
+                            {k.sub && <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 8, marginTop: 1 }}>{k.sub}</div>}
+                            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 9, marginTop: 1 }}>{k.l}</div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Panneau détail KPI */}
+                      {activeKpi === 'impr' && (
+                        <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '12px 14px', marginBottom: 12 }}>
+                          <div style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 12, marginBottom: 10 }}>📊 Impressions — 6 derniers mois</div>
+                          {(() => {
+                            const now = new Date()
+                            return Array.from({ length: 6 }, (_, i) => {
+                              const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+                              const m = d.getMonth(), y = d.getFullYear()
+                              const label = d.toLocaleDateString('fr-FR', { month: 'long', year: '2-digit' })
+                              const total = (impressionsData || []).filter(v => { const vd = new Date(v.created_at); return vd.getMonth() === m && vd.getFullYear() === y }).length
+                              return (
+                                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                  <span style={{ color: i === 0 ? '#4D9EFF' : 'rgba(255,255,255,0.7)', fontSize: 12 }}>{label}{i === 0 ? ' (en cours)' : ''}</span>
+                                  <span style={{ color: '#9CA3AF', fontWeight: 700, fontSize: 13 }}>{total}</span>
+                                </div>
+                              )
+                            })
+                          })()}
+                        </div>
+                      )}
+
+                      {activeKpi === 'vues' && (
+                        <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '12px 14px', marginBottom: 12 }}>
+                          <div style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 12, marginBottom: 10 }}>👁️ Vues — 6 derniers mois</div>
+                          {(() => {
+                            const now = new Date()
+                            return Array.from({ length: 6 }, (_, i) => {
+                              const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+                              const m = d.getMonth(), y = d.getFullYear()
+                              const label = d.toLocaleDateString('fr-FR', { month: 'long', year: '2-digit' })
+                              const total = vuesData.filter(v => { const vd = new Date(v.created_at); return vd.getMonth() === m && vd.getFullYear() === y }).length
+                              return (
+                                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                  <span style={{ color: i === 0 ? '#4D9EFF' : 'rgba(255,255,255,0.7)', fontSize: 12 }}>{label}{i === 0 ? ' (en cours)' : ''}</span>
+                                  <span style={{ color: '#6B7280', fontWeight: 700, fontSize: 13 }}>{total}</span>
+                                </div>
+                              )
+                            })
+                          })()}
+                        </div>
+                      )}
+
+                      {activeKpi === 'honorees' && (
+                        <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '12px 14px', marginBottom: 12 }}>
+                          <div style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 12, marginBottom: 10 }}>✅ Visites honorées — 6 derniers mois</div>
+                          {(() => {
+                            const now = new Date()
+                            return Array.from({ length: 6 }, (_, i) => {
+                              const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+                              const m = d.getMonth(), y = d.getFullYear()
+                              const label = d.toLocaleDateString('fr-FR', { month: 'long', year: '2-digit' })
+                              const total = visites.filter(v => { const vd = new Date(v.created_at); return vd.getMonth() === m && vd.getFullYear() === y }).length
+                              return (
+                                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                  <span style={{ color: i === 0 ? '#4D9EFF' : 'rgba(255,255,255,0.7)', fontSize: 12 }}>{label}{i === 0 ? ' (en cours)' : ''}</span>
+                                  <span style={{ color: '#22C55E', fontWeight: 700, fontSize: 13 }}>{total}</span>
+                                </div>
+                              )
+                            })
+                          })()}
+                        </div>
+                      )}
+
+                      {activeKpi === 'ca' && (
+                        <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '12px 14px', marginBottom: 12 }}>
+                          <div style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 12, marginBottom: 10 }}>💶 CA généré — 6 derniers mois</div>
+                          {(() => {
+                            const now = new Date()
+                            return Array.from({ length: 6 }, (_, i) => {
+                              const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+                              const fin = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59)
+                              const label = d.toLocaleDateString('fr-FR', { month: 'long', year: '2-digit' })
+                              const total = visites.filter(v => { const vd = new Date(v.created_at); return vd >= d && vd <= fin }).reduce((s, v) => s + (v.montant_remise || 0), 0)
+                              return (
+                                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                  <span style={{ color: i === 0 ? '#4D9EFF' : 'rgba(255,255,255,0.7)', fontSize: 12 }}>{label}{i === 0 ? ' (en cours)' : ''}</span>
+                                  <span style={{ color: '#F59E0B', fontWeight: 700, fontSize: 13 }}>{total.toFixed(2)} €</span>
+                                </div>
+                              )
+                            })
+                          })()}
+                        </div>
+                      )}
+
+                      {activeKpi === 'offres' && (
+                        <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '12px 14px', marginBottom: 12 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                            <div style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 12 }}>🎯 Mes offres ({nbOffresTotal})</div>
+                            <span style={{ color: '#22C55E', fontSize: 11, fontWeight: 700 }}>{nbOffresActives} active{nbOffresActives !== 1 ? 's' : ''}</span>
+                          </div>
+                          {offres.length === 0
+                            ? <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, textAlign: 'center', padding: '12px 0' }}>Aucune offre</div>
+                            : offres.map(o => (
+                              <div key={o.id} onClick={() => { setActiveKpi(null); setDashTab('offres') }}
+                                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }}>
+                                <div>
+                                  <div style={{ color: '#FFFFFF', fontSize: 12, fontWeight: 600 }}>{o.titre}</div>
+                                  <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10 }}>{o.type_offre} · {o.promo_pct ? `-${o.promo_pct}%` : ''}</div>
+                                </div>
+                                <span style={{ background: isOffreActive(o) ? 'rgba(34,197,94,0.15)' : 'rgba(107,114,128,0.15)', color: isOffreActive(o) ? '#22C55E' : '#6B7280', fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 10 }}>
+                                  {isOffreActive(o) ? 'Active' : 'Inactive'}
+                                </span>
+                              </div>
+                            ))
+                          }
+                        </div>
+                      )}
+                    </>
+                  )
+                })()}
 
                 {/* Historique mensuel */}
                 {(() => {
@@ -458,14 +579,12 @@ export default function PrestataireDashboard({ user, onLogout, onHome }) {
                   </>
                 )}
 
-                {planHasIA(active?.plan)
-                  ? <ConseilIA offres={offres} visites={visites} vuesData={vuesData} prestataire={active} />
-                  : <div style={{ background: '#000000', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, padding: '16px 20px', marginTop: 12, textAlign: 'center' }}>
-                    <div style={{ fontSize: 28, marginBottom: 8 }}>🤖</div>
-                    <div style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 14, marginBottom: 4 }}>Conseil <span style={{ color: '#F59E0B' }}>IA</span> disponible en Premium</div>
-                    <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, lineHeight: 1.6 }}>Analyse automatique de vos meilleures offres et recommandations personnalisées.</div>
-                  </div>
-                }
+                {/* IA — bientôt disponible */}
+                <div style={{ background: '#000000', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, padding: '16px 20px', marginTop: 12, textAlign: 'center' }}>
+                  <div style={{ fontSize: 28, marginBottom: 8 }}>🤖</div>
+                  <div style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 14, marginBottom: 4 }}>IA — <span style={{ color: '#F59E0B' }}>Bientôt disponible</span></div>
+                  <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, lineHeight: 1.6 }}>Analyse automatique de vos meilleures offres et recommandations personnalisées.</div>
+                </div>
               </>
             )}
           </div>

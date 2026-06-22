@@ -79,6 +79,16 @@ export default function FacturePrestataire({ prestataire, visites }) {
               <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 9 }}>détail →</div>
             </div>
           ))}
+
+          <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', padding: '8px 10px', color: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: 600 }}>Statut</div>
+          {moisList.map(m => (
+            <div key={m.key} style={{ border: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.02)', padding: '8px 4px', textAlign: 'center' }}>
+              {m.isCurrent
+                ? <span style={{ background: 'rgba(239,68,68,0.15)', color: '#EF4444', fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 10 }}>🔴 À payer</span>
+                : <span style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E', fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 10 }}>✅ Réglé</span>
+              }
+            </div>
+          ))}
         </div>
       </div>
 
