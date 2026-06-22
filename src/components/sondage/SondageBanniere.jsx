@@ -22,7 +22,7 @@ export default function SondageBanniere({ etudiantId = null }) {
         .single()
       if (!s) return
 
-      const { data: q, error: qError } = await db()
+      const { data: q } = await db()
         .from('questions_sondage')
         .select('id,question,ordre')
         .eq('sondage_id', s.id)
@@ -46,11 +46,12 @@ export default function SondageBanniere({ etudiantId = null }) {
   const repondre = async (questionId) => {
     if (repond) return
     setRepond(true)
+    const q = questions.find(q => q.id === questionId)
     try {
       await db().from('reponses_sondage').insert({
         sondage_id: sondage.id,
         question_id: questionId,
-        etudiant_id: etudiantId || null,
+        reponse: q?.question || '',
       })
     } catch (e) {
       console.error(e)
