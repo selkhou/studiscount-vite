@@ -400,89 +400,51 @@ export default function PrestataireDashboard({ user, onLogout, onHome }) {
                       </div>
 
                       {/* Panneau détail KPI */}
-                      {activeKpi === 'impr' && (
-                        <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '12px 14px', marginBottom: 12 }}>
-                          <div style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 12, marginBottom: 10 }}>📊 Impressions — 6 derniers mois</div>
-                          {(() => {
-                            const now = new Date()
-                            return Array.from({ length: 6 }, (_, i) => {
-                              const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-                              const m = d.getMonth(), y = d.getFullYear()
-                              const label = d.toLocaleDateString('fr-FR', { month: 'long', year: '2-digit' })
-                              const total = (impressionsData || []).filter(v => { const vd = new Date(v.created_at); return vd.getMonth() === m && vd.getFullYear() === y }).length
-                              return (
-                                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                  <span style={{ color: i === 0 ? '#4D9EFF' : 'rgba(255,255,255,0.7)', fontSize: 12 }}>{label}{i === 0 ? ' (en cours)' : ''}</span>
-                                  <span style={{ color: '#9CA3AF', fontWeight: 700, fontSize: 13 }}>{total}</span>
+                      {/* Panneau détail KPI — graphe barres style admin */}
+                      {activeKpi && activeKpi !== 'offres' && (() => {
+                        const now = new Date()
+                        const parMois = Array.from({ length: 6 }, (_, i) => {
+                          const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+                          const fin = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59)
+                          const m = d.getMonth(), y = d.getFullYear()
+                          const label = d.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' })
+                          let nb = 0
+                          if (activeKpi === 'impr') nb = (impressionsData || []).filter(v => { const vd = new Date(v.created_at); return vd.getMonth() === m && vd.getFullYear() === y }).length
+                          if (activeKpi === 'vues') nb = vuesData.filter(v => { const vd = new Date(v.created_at); return vd.getMonth() === m && vd.getFullYear() === y }).length
+                          if (activeKpi === 'honorees') nb = visites.filter(v => { const vd = new Date(v.created_at); return vd >= d && vd <= fin }).length
+                          if (activeKpi === 'ca') nb = visites.filter(v => { const vd = new Date(v.created_at); return vd >= d && vd <= fin }).reduce((s, v) => s + (v.montant_remise || 0), 0)
+                          return { label, nb, isCurrent: i === 0 }
+                        })
+                        const total = parMois.reduce((s, m) => s + m.nb, 0)
+                        const maxM = Math.max(...parMois.map(m => m.nb), 1)
+                        const color = activeKpi === 'impr' ? '#9CA3AF' : activeKpi === 'vues' ? '#6B7280' : activeKpi === 'honorees' ? '#22C55E' : '#F59E0B'
+                        const titles = { impr: 'Impressions', vues: 'Vues', honorees: 'Visites honorées', ca: 'CA généré' }
+                        const isCurrency = activeKpi === 'ca'
+                        const fmt = v => isCurrency ? v.toFixed(2) + ' €' : v
+                        return (
+                          <div style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid rgba(255,255,255,0.1)`, borderRadius: 12, padding: '12px 14px', marginBottom: 12 }}>
+                            <div style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 12, marginBottom: 4 }}>{titles[activeKpi]} — 6 derniers mois</div>
+                            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, marginBottom: 12 }}>{fmt(total)} {isCurrency ? '' : `${titles[activeKpi].toLowerCase()}`}</div>
+                            {/* Graphe barres */}
+                            <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end', height: 60, marginBottom: 12 }}>
+                              {/* Barre TOTAL */}
+                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 10, fontWeight: 700 }}>{fmt(total)}</div>
+                                <div style={{ width: '100%', background: 'rgba(255,255,255,0.3)', borderRadius: '3px 3px 0 0', height: '50px' }} />
+                                <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 9 }}>TOTAL</div>
+                              </div>
+                              {parMois.map((m, i) => (
+                                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                                  {m.isCurrent && <div style={{ color: '#4D9EFF', fontSize: 8, fontWeight: 700 }}>EN COURS</div>}
+                                  <div style={{ color: m.isCurrent ? '#4D9EFF' : 'rgba(255,255,255,0.6)', fontSize: 10, fontWeight: 700 }}>{fmt(m.nb)}</div>
+                                  <div style={{ width: '100%', background: m.isCurrent ? '#4D9EFF' : color, borderRadius: '3px 3px 0 0', height: `${Math.max(3, m.nb / maxM * 50)}px` }} />
+                                  <div style={{ color: m.isCurrent ? '#4D9EFF' : 'rgba(255,255,255,0.4)', fontSize: 9 }}>{m.label}</div>
                                 </div>
-                              )
-                            })
-                          })()}
-                        </div>
-                      )}
-
-                      {activeKpi === 'vues' && (
-                        <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '12px 14px', marginBottom: 12 }}>
-                          <div style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 12, marginBottom: 10 }}>👁️ Vues — 6 derniers mois</div>
-                          {(() => {
-                            const now = new Date()
-                            return Array.from({ length: 6 }, (_, i) => {
-                              const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-                              const m = d.getMonth(), y = d.getFullYear()
-                              const label = d.toLocaleDateString('fr-FR', { month: 'long', year: '2-digit' })
-                              const total = vuesData.filter(v => { const vd = new Date(v.created_at); return vd.getMonth() === m && vd.getFullYear() === y }).length
-                              return (
-                                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                  <span style={{ color: i === 0 ? '#4D9EFF' : 'rgba(255,255,255,0.7)', fontSize: 12 }}>{label}{i === 0 ? ' (en cours)' : ''}</span>
-                                  <span style={{ color: '#6B7280', fontWeight: 700, fontSize: 13 }}>{total}</span>
-                                </div>
-                              )
-                            })
-                          })()}
-                        </div>
-                      )}
-
-                      {activeKpi === 'honorees' && (
-                        <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '12px 14px', marginBottom: 12 }}>
-                          <div style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 12, marginBottom: 10 }}>✅ Visites honorées — 6 derniers mois</div>
-                          {(() => {
-                            const now = new Date()
-                            return Array.from({ length: 6 }, (_, i) => {
-                              const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-                              const m = d.getMonth(), y = d.getFullYear()
-                              const label = d.toLocaleDateString('fr-FR', { month: 'long', year: '2-digit' })
-                              const total = visites.filter(v => { const vd = new Date(v.created_at); return vd.getMonth() === m && vd.getFullYear() === y }).length
-                              return (
-                                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                  <span style={{ color: i === 0 ? '#4D9EFF' : 'rgba(255,255,255,0.7)', fontSize: 12 }}>{label}{i === 0 ? ' (en cours)' : ''}</span>
-                                  <span style={{ color: '#22C55E', fontWeight: 700, fontSize: 13 }}>{total}</span>
-                                </div>
-                              )
-                            })
-                          })()}
-                        </div>
-                      )}
-
-                      {activeKpi === 'ca' && (
-                        <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '12px 14px', marginBottom: 12 }}>
-                          <div style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 12, marginBottom: 10 }}>💶 CA généré — 6 derniers mois</div>
-                          {(() => {
-                            const now = new Date()
-                            return Array.from({ length: 6 }, (_, i) => {
-                              const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-                              const fin = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59)
-                              const label = d.toLocaleDateString('fr-FR', { month: 'long', year: '2-digit' })
-                              const total = visites.filter(v => { const vd = new Date(v.created_at); return vd >= d && vd <= fin }).reduce((s, v) => s + (v.montant_remise || 0), 0)
-                              return (
-                                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                  <span style={{ color: i === 0 ? '#4D9EFF' : 'rgba(255,255,255,0.7)', fontSize: 12 }}>{label}{i === 0 ? ' (en cours)' : ''}</span>
-                                  <span style={{ color: '#F59E0B', fontWeight: 700, fontSize: 13 }}>{total.toFixed(2)} €</span>
-                                </div>
-                              )
-                            })
-                          })()}
-                        </div>
-                      )}
+                              ))}
+                            </div>
+                          </div>
+                        )
+                      })()}
 
                       {activeKpi === 'offres' && (
                         <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '12px 14px', marginBottom: 12 }}>
