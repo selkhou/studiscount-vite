@@ -25,8 +25,8 @@ export default function SondageBanniere({ etudiantId = null }) {
 
 const { data: q, error: qError } = await db()
   .from('questions_sondage')
-  .select('id,question,ordre')
-  .eq('sondage_id', s.id)
+  .select('id,question,ordre,sondage_id')
+ // .eq('sondage_id', s.id)
   .order('ordre')
 console.log('questions:', q, 'error:', qError)
 
