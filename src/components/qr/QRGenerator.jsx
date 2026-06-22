@@ -118,6 +118,7 @@ export default function QRGenerator({ offre, etudiant, onClose }) {
           Montrez ce QR code au prestataire qui le scannera pour valider votre visite.
           {etudiant && <span style={{ color: '#22C55E', fontWeight: 600 }}><br />+{window.SIOK_PARAMS?.points_qrc || 3} points crédités après scan !</span>}
           {!etudiant && <span style={{ color: '#EF4444' }}><br />Créez un compte pour gagner des points.</span>}
+          {etudiant && <span style={{ color: '#9CA3AF', fontSize: 11 }}><br />ℹ️ Points limités à {window.SIOK_PARAMS?.points_max_jour || 5} pts/jour</span>}
         </div>
 
         {isExpired && (

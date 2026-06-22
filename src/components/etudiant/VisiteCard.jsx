@@ -157,6 +157,9 @@ export default function VisiteCard({ visite: v, type, etudiantId, onUpdated }) {
             </div>
           )}
         </div>
+        <div style={{ color: '#9CA3AF', fontSize: 10, marginTop: 6 }}>
+          ℹ️ Points limités à {window.SIOK_PARAMS?.points_max_jour || 5} pts/jour
+        </div>
 
         {showAvis && !v.avis && (
           <div style={{ marginTop: 8 }}>
