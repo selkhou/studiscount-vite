@@ -20,6 +20,7 @@ export default function SondageBanniere({ etudiantId = null }) {
         .eq('actif', true)
         .limit(1)
         .single()
+        console.log('sondage actif:', s)
       if (!s) return
 
       const { data: q } = await db()
