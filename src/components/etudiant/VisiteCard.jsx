@@ -10,6 +10,7 @@ export default function VisiteCard({ visite: v, type, etudiantId, onUpdated }) {
   const [note, setNote] = useState(v.note || 0)
   const [saving, setSaving] = useState(false)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const [plafondMsg, setPlafondMsg] = useState(null)
   const SUPABASE_URL = 'https://ghwozyzlhcmuhneumasv.supabase.co'
 
   const submitAvis = async () => {
@@ -37,18 +38,27 @@ export default function VisiteCard({ visite: v, type, etudiantId, onUpdated }) {
       if (!v.avis && !v.note) {
         const { data: et } = await db().from('etudiants').select('points').eq('id', etudiantId).single()
         if (et) {
-          const ptsAvis = parseInt(window.SIOK_PARAMS?.points_avis) || 2
-          const newPts = (et.points || 0) + ptsAvis
-          await db().from('etudiants').update({ points: newPts }).eq('id', etudiantId)
-          try {
-            const s = localStorage.getItem('stu10_etudiant')
-            if (s) { const e = JSON.parse(s); e.points = newPts; localStorage.setItem('stu10_etudiant', JSON.stringify(e)) }
-          } catch (ex) {}
+          // Vérifier le plafond journalier
+          const today = new Date(); today.setHours(0,0,0,0)
+          const { data: visitesJour } = await db().from('visites')
+            .select('points').eq('etudiant_id', etudiantId).gte('created_at', today.toISOString())
+          const pointsJour = (visitesJour || []).reduce((s, vj) => s + (vj.points || 0), 0)
+          const maxJour = parseInt(window.SIOK_PARAMS?.points_max_jour) || 5
+          const plafondAtteint = pointsJour >= maxJour
+          const ptsAvis = plafondAtteint ? 0 : (parseInt(window.SIOK_PARAMS?.points_avis) || 2)
+
+          if (!plafondAtteint) {
+            const newPts = (et.points || 0) + ptsAvis
+            await db().from('etudiants').update({ points: newPts }).eq('id', etudiantId)
+            try {
+              const s = localStorage.getItem('stu10_etudiant')
+              if (s) { const e = JSON.parse(s); e.points = newPts; localStorage.setItem('stu10_etudiant', JSON.stringify(e)) }
+            } catch (ex) {}
+          }
+          await db().from('visites').update({ points: (v.points || 0) + ptsAvis }).eq('id', v.id)
+          onUpdated({ ...updateData, points: (v.points || 0) + ptsAvis, note, plafondAtteint, maxJour })
+          if (plafondAtteint) setPlafondMsg(`Plafond de ${maxJour} pts/jour atteint — avis enregistré sans points`)
         }
-        await db().from('visites').update({
-          points: (v.points || 0) + (parseInt(window.SIOK_PARAMS?.points_avis) || 2)
-        }).eq('id', v.id)
-        onUpdated({ ...updateData, points: (v.points || 0) + (parseInt(window.SIOK_PARAMS?.points_avis) || 2), note })
       } else {
         onUpdated({ ...updateData, note })
       }
@@ -108,6 +118,12 @@ export default function VisiteCard({ visite: v, type, etudiantId, onUpdated }) {
           <div style={{ background: '#F8F8F8', borderRadius: 10, padding: '8px 12px', marginBottom: 8 }}>
             {v.note && <div style={{ marginBottom: 4 }}><StarRating value={v.note} readOnly size={14} /></div>}
             {v.avis && <div style={{ fontSize: 13, color: CS.text, fontStyle: 'italic' }}>💬 "{v.avis}"</div>}
+          </div>
+        )}
+
+        {plafondMsg && (
+          <div style={{ background: 'rgba(245,158,11,0.1)', borderRadius: 10, padding: '8px 12px', marginBottom: 8, color: '#F59E0B', fontSize: 12, fontWeight: 600 }}>
+            ⚠️ {plafondMsg}
           </div>
         )}
 
