@@ -79,7 +79,7 @@ export default function QRScanner({ prestataireId, onScanned, onClose }) {
         prestataire_id: prestataireId,
         etudiant_id: qr.etudiantId === 'anon' ? null : qr.etudiantId,
         etudiant_anon_id: (!qr.etudiantId || qr.etudiantId === 'anon') ? 'anon' : null,
-        points: qr.etudiantId && qr.etudiantId !== 'anon' ? (parseInt(window.SIOK_PARAMS?.points_qrc) || 3) : 0,
+        points: 0, // mis à jour après vérification plafond journalier
         montant_normal: prixNormal,
         montant_remise: prixRemise,
       })
@@ -90,12 +90,35 @@ export default function QRScanner({ prestataireId, onScanned, onClose }) {
           const { data: etList } = await db().from('etudiants').select('id,points').eq('id', qr.etudiantId).limit(1)
           const et = etList && etList.length > 0 ? etList[0] : null
           if (et) {
-            await db().from('etudiants').update({ points: (et.points || 0) + (parseInt(window.SIOK_PARAMS?.points_qrc) || 3) }).eq('id', qr.etudiantId)
+            // Vérifier le plafond journalier
+            const today = new Date(); today.setHours(0,0,0,0)
+            const { data: visitesJour } = await db().from('visites')
+              .select('points')
+              .eq('etudiant_id', qr.etudiantId)
+              .gte('created_at', today.toISOString())
+            const pointsJour = (visitesJour || []).reduce((s, v) => s + (v.points || 0), 0)
+            const maxJour = parseInt(window.SIOK_PARAMS?.points_max_jour) || 5
+            const plafondAtteint = pointsJour >= maxJour
+            const ptsQrc = parseInt(window.SIOK_PARAMS?.points_qrc) || 3
+            if (!plafondAtteint) {
+              // Mettre à jour la visite avec les vrais points
+              await db().from('visites').update({ points: ptsQrc })
+                .eq('offre_id', qr.offreId)
+                .eq('etudiant_id', qr.etudiantId)
+                .order('created_at', { ascending: false })
+                .limit(1)
+              await db().from('etudiants').update({ points: (et.points || 0) + ptsQrc }).eq('id', qr.etudiantId)
+            }
+            setResult({ offre, etudiant_id: qr.etudiantId, plafondAtteint, maxJour })
           }
-        } catch (ptEx) { console.warn('Points non crédités:', ptEx.message) }
+        } catch (ptEx) {
+          console.warn('Points non crédités:', ptEx.message)
+          setResult({ offre, etudiant_id: qr.etudiantId, plafondAtteint: false, maxJour: 5 })
+        }
+      } else {
+        setResult({ offre, etudiant_id: qr.etudiantId })
       }
 
-      setResult({ offre, etudiant_id: qr.etudiantId })
       onScanned && onScanned()
     } catch (e) { setError(e.message) }
     setSaving(false)
@@ -157,7 +180,9 @@ export default function QRScanner({ prestataireId, onScanned, onClose }) {
           </div>
           <div style={{ color: '#6B7280', fontSize: 12, marginBottom: 20 }}>
             {result.etudiant_id && result.etudiant_id !== 'anon'
-              ? `🎓 +${window.SIOK_PARAMS?.points_qrc || 3} points crédités`
+              ? result.plafondAtteint
+                ? <span style={{ color: '#F59E0B', fontWeight: 700 }}>⚠️ Plafond de {result.maxJour} points/jour atteint — visite enregistrée sans points</span>
+                : `🎓 +${window.SIOK_PARAMS?.points_qrc || 3} points crédités`
               : '👤 Visite anonyme — aucun point'}
           </div>
           <button onClick={onClose} style={{ width: '100%', padding: '14px', borderRadius: 14, border: 'none', background: '#0066FF', color: 'white', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>

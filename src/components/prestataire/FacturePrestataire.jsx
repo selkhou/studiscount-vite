@@ -107,7 +107,7 @@ export default function FacturePrestataire({ prestataire, visites }) {
                     <div key={h} style={{ color: 'rgba(255,255,255,0.4)', fontSize: 9, fontWeight: 700, padding: '4px 6px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>{h}</div>
                   ))}
                 </div>
-                {detailMois.vMois.map(v => (
+                {[...detailMois.vMois].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).map(v => (
                   <div key={v.id} style={{ display: 'grid', gridTemplateColumns: '80px 2fr 1fr 1fr', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                     <div style={{ padding: '5px 6px', color: 'rgba(255,255,255,0.4)', fontSize: 10 }}>
                       {new Date(v.created_at).toLocaleDateString('fr-FR')}
