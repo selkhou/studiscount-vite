@@ -100,23 +100,31 @@ export default function FacturePrestataire({ prestataire, visites }) {
           </div>
           {detailMois.vMois.length === 0
             ? <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 13, textAlign: 'center', padding: '12px 0' }}>Aucune vente</div>
-            : <>
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 0, marginBottom: 4 }}>
-                {['Date / Offre', 'Montant remisé', 'Commission'].map(h => (
-                  <div key={h} style={{ color: 'rgba(255,255,255,0.4)', fontSize: 9, fontWeight: 700, padding: '4px 6px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>{h}</div>
+            : <div style={{ overflowX: 'auto' }}>
+              <div style={{ minWidth: 480 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '80px 2fr 1fr 1fr', gap: 0, marginBottom: 4 }}>
+                  {['Date', 'Offre', 'Montant remisé', 'Commission'].map(h => (
+                    <div key={h} style={{ color: 'rgba(255,255,255,0.4)', fontSize: 9, fontWeight: 700, padding: '4px 6px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>{h}</div>
+                  ))}
+                </div>
+                {detailMois.vMois.map(v => (
+                  <div key={v.id} style={{ display: 'grid', gridTemplateColumns: '80px 2fr 1fr 1fr', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <div style={{ padding: '5px 6px', color: 'rgba(255,255,255,0.4)', fontSize: 10 }}>
+                      {new Date(v.created_at).toLocaleDateString('fr-FR')}
+                    </div>
+                    <div style={{ padding: '5px 6px' }}>
+                      <div style={{ color: '#FFFFFF', fontSize: 11, fontWeight: 600 }}>{v.offres?.titre || 'Offre'}</div>
+                    </div>
+                    <div style={{ padding: '5px 6px', color: 'rgba(255,255,255,0.7)', fontSize: 11, textAlign: 'right' }}>
+                      {v.montant_remise ? v.montant_remise.toFixed(2) + ' €' : '—'}
+                    </div>
+                    <div style={{ padding: '5px 6px', color: 'rgba(255,165,0,0.8)', fontSize: 11, fontWeight: 700, textAlign: 'right' }}>
+                      {v.montant_remise ? (v.montant_remise * commPct / 100).toFixed(2) + ` € (${commPct}%)` : '—'}
+                    </div>
+                  </div>
                 ))}
               </div>
-              {detailMois.vMois.map(v => (
-                <div key={v.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                  <div style={{ padding: '5px 6px' }}>
-                    <div style={{ color: '#FFFFFF', fontSize: 11, fontWeight: 600 }}>{v.offres?.titre || 'Offre'}</div>
-                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 9 }}>{new Date(v.created_at).toLocaleDateString('fr-FR')}</div>
-                  </div>
-                  <div style={{ padding: '5px 6px', color: 'rgba(255,255,255,0.7)', fontSize: 11, textAlign: 'right' }}>{v.montant_remise ? v.montant_remise.toFixed(2) + ' €' : '—'}</div>
-                  <div style={{ padding: '5px 6px', color: 'rgba(255,165,0,0.8)', fontSize: 11, fontWeight: 700, textAlign: 'right' }}>{v.montant_remise ? (v.montant_remise * commPct / 100).toFixed(2) + ' €' : '—'}</div>
-                </div>
-              ))}
-            </>
+            </div>
           }
         </div>
       )}
