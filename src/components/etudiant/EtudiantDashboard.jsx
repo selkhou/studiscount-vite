@@ -105,7 +105,7 @@ function EtudiantRegister({ onSuccess, onBack }) {
   const [pwd2, setPwd2] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [otpData, setOtpData] = useState(null) // { email, etudiant }
+  const [otpData, setOtpData] = useState(null) // { email, prenom, authId }
 
   async function handleRegister() {
     setError('')
@@ -116,21 +116,7 @@ function EtudiantRegister({ onSuccess, onBack }) {
     try {
       const { data, error: e } = await db().auth.signUp({ email, password: pwd })
       if (e) { setError(e.message); setLoading(false); return }
-
-      const { data: et, error: e2 } = await db()
-        .from('etudiants')
-        .insert({
-          auth_id: data.user?.id,
-          email,
-          prenom,
-          statut_validation: 'en_attente',
-          points: 0,
-        })
-        .select()
-        .single()
-
-      if (e2) { setError(e2.message); setLoading(false); return }
-      setOtpData({ email, etudiant: et })
+      setOtpData({ email, prenom, authId: data.user?.id })
     } catch (e) {
       setError(e.message)
     }
@@ -140,7 +126,8 @@ function EtudiantRegister({ onSuccess, onBack }) {
   if (otpData) return (
     <EtudiantOTP
       email={otpData.email}
-      etudiant={otpData.etudiant}
+      prenom={otpData.prenom}
+      authId={otpData.authId}
       onSuccess={onSuccess}
       onBack={() => setOtpData(null)}
     />
@@ -217,7 +204,7 @@ function EtudiantRegister({ onSuccess, onBack }) {
   )
 }
 
-function EtudiantOTP({ email, etudiant, onSuccess, onBack }) {
+function EtudiantOTP({ email, prenom, authId, onSuccess, onBack }) {
   const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -230,7 +217,22 @@ function EtudiantOTP({ email, etudiant, onSuccess, onBack }) {
     try {
       const { error: e } = await db().auth.verifyOtp({ email, token: code, type: 'signup' })
       if (e) { setError(e.message); setLoading(false); return }
-      onSuccess(etudiant)
+
+      // OTP validé — on crée maintenant l'étudiant en base
+      const { data: et, error: e2 } = await db()
+        .from('etudiants')
+        .insert({
+          auth_id: authId,
+          email,
+          prenom,
+          statut_validation: 'en_attente',
+          points: 0,
+        })
+        .select()
+        .single()
+
+      if (e2) { setError(e2.message); setLoading(false); return }
+      onSuccess(et)
     } catch (e) {
       setError(e.message)
     }

@@ -13,6 +13,11 @@ export default function PrestataireRegister({ onSuccess, onBack }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [geoLoading, setGeoLoading] = useState(false)
+  const [otpData, setOtpData] = useState(null)
+  const [otpCode, setOtpCode] = useState('')
+  const [otpLoading, setOtpLoading] = useState(false)
+  const [otpError, setOtpError] = useState('')
+  const [otpResent, setOtpResent] = useState(false)
   const [form, setForm] = useState({
     email: '', password: '', nom_responsable: '', telephone: '',
     nom: '', type_metier: 'restaurant', siret: '',
@@ -61,21 +66,9 @@ export default function PrestataireRegister({ onSuccess, onBack }) {
       const authId = authData.user?.id
       if (!authId) throw new Error('Erreur création compte')
 
-      const debut = new Date()
-      const fin = planFin(form.plan)
-
-      const { error: dbErr } = await db().from('prestataires').insert({
-        auth_id: authId, nom: form.nom, type_metier: form.type_metier,
-        siret: form.siret || null, nom_responsable: form.nom_responsable || null,
-        email: form.email, telephone: form.telephone || null,
-        adresse: form.adresse || null,
-        ville: CITIES.find(c => c.id === form.ville)?.name || form.ville,
-        lat: form.lat || null, lng: form.lng || null,
-        plan: form.plan, plan_debut: debut.toISOString(),
-        plan_fin: fin?.toISOString() || null,
-      })
-      if (dbErr) throw dbErr
-      onSuccess(authData.user)
+      // Ne pas insérer en base avant validation OTP
+      setOtpData({ email: form.email, user: authData.user, authId, form: { ...form } })
+    } catch (e) { setError(e.message) }
     } catch (e) { setError(e.message) }
     setSaving(false)
   }
@@ -106,6 +99,73 @@ export default function PrestataireRegister({ onSuccess, onBack }) {
         <div key={s} style={{ flex: 1, height: 4, borderRadius: 2, background: s <= step ? '#0066FF' : 'rgba(255,255,255,0.1)' }} />
       ))}
     </div>
+  )
+
+  const handleOtpVerify = async () => {
+    setOtpError('')
+    if (otpCode.length < 6) { setOtpError('Saisis le code à 6 chiffres reçu par email'); return }
+    setOtpLoading(true)
+    try {
+      const { error: e } = await db().auth.verifyOtp({ email: otpData.email, token: otpCode, type: 'signup' })
+      if (e) { setOtpError(e.message); setOtpLoading(false); return }
+
+      // OTP validé — on insère maintenant le prestataire en base
+      const f = otpData.form
+      const debut = new Date()
+      const fin = planFin(f.plan)
+
+      const { error: dbErr } = await db().from('prestataires').insert({
+        auth_id: otpData.authId, nom: f.nom, type_metier: f.type_metier,
+        siret: f.siret || null, nom_responsable: f.nom_responsable || null,
+        email: f.email, telephone: f.telephone || null,
+        adresse: f.adresse || null,
+        ville: CITIES.find(c => c.id === f.ville)?.name || f.ville,
+        lat: f.lat || null, lng: f.lng || null,
+        plan: f.plan, plan_debut: debut.toISOString(),
+        plan_fin: fin?.toISOString() || null,
+      })
+      if (dbErr) { setOtpError(dbErr.message); setOtpLoading(false); return }
+
+      onSuccess(otpData.user)
+    } catch (e) { setOtpError(e.message) }
+    setOtpLoading(false)
+  }
+
+  const handleOtpResend = async () => {
+    try {
+      await db().auth.resend({ email: otpData.email, type: 'signup' })
+      setOtpResent(true); setTimeout(() => setOtpResent(false), 5000)
+    } catch (e) { setOtpError(e.message) }
+  }
+
+  // Écran OTP après inscription
+  if (otpData) return (
+    <PrestPageShell onBack={() => setOtpData(null)} backLabel="← Retour">
+      <div style={{ padding: '32px 24px' }}>
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+          <div style={{ fontSize: 48, marginBottom: 12 }}>📧</div>
+          <div style={{ color: C.text, fontSize: 20, fontWeight: 800, marginBottom: 4 }}>Vérifie ton email</div>
+          <div style={{ color: C.muted, fontSize: 13, lineHeight: 1.6 }}>
+            Un code de vérification a été envoyé à<br />
+            <span style={{ color: '#0066FF', fontWeight: 700 }}>{otpData.email}</span>
+          </div>
+        </div>
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ color: C.sub, fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 5 }}>Code de vérification</div>
+          <input type="number" value={otpCode} onChange={e => setOtpCode(e.target.value.slice(0, 6))}
+            placeholder="123456"
+            style={{ width: '100%', background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '12px 14px', color: C.text, fontSize: 20, fontFamily: 'inherit', outline: 'none', textAlign: 'center', letterSpacing: 8, boxSizing: 'border-box' }} />
+        </div>
+        {otpError && <div style={{ background: 'rgba(239,68,68,0.1)', borderRadius: 8, padding: '10px 12px', marginBottom: 14, color: '#ef4444', fontSize: 13 }}>⚠️ {otpError}</div>}
+        {otpResent && <div style={{ background: 'rgba(34,197,94,0.1)', borderRadius: 8, padding: '10px 12px', marginBottom: 14, color: '#22C55E', fontSize: 13 }}>✅ Code renvoyé !</div>}
+        <Btn onClick={handleOtpVerify} loading={otpLoading}>Valider mon compte →</Btn>
+        <div style={{ textAlign: 'center', marginTop: 14 }}>
+          <button onClick={handleOtpResend} style={{ background: 'none', border: 'none', color: C.muted, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'underline' }}>
+            Renvoyer le code
+          </button>
+        </div>
+      </div>
+    </PrestPageShell>
   )
 
   if (step === 1) return (
