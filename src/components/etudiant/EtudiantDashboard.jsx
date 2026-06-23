@@ -105,6 +105,7 @@ function EtudiantRegister({ onSuccess, onBack }) {
   const [pwd2, setPwd2] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [otpData, setOtpData] = useState(null) // { email, etudiant }
 
   async function handleRegister() {
     setError('')
@@ -129,12 +130,21 @@ function EtudiantRegister({ onSuccess, onBack }) {
         .single()
 
       if (e2) { setError(e2.message); setLoading(false); return }
-      onSuccess(et)
+      setOtpData({ email, etudiant: et })
     } catch (e) {
       setError(e.message)
     }
     setLoading(false)
   }
+
+  if (otpData) return (
+    <EtudiantOTP
+      email={otpData.email}
+      etudiant={otpData.etudiant}
+      onSuccess={onSuccess}
+      onBack={() => setOtpData(null)}
+    />
+  )
 
   return (
     <div style={{ padding: '32px 24px' }}>
@@ -207,7 +217,87 @@ function EtudiantRegister({ onSuccess, onBack }) {
   )
 }
 
-export default function EtudiantDashboard({ onBack, onConnecte }) {
+function EtudiantOTP({ email, etudiant, onSuccess, onBack }) {
+  const [code, setCode] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [resent, setResent] = useState(false)
+
+  async function handleVerify() {
+    setError('')
+    if (code.length < 6) { setError('Saisis le code à 6 chiffres reçu par email'); return }
+    setLoading(true)
+    try {
+      const { error: e } = await db().auth.verifyOtp({ email, token: code, type: 'signup' })
+      if (e) { setError(e.message); setLoading(false); return }
+      onSuccess(etudiant)
+    } catch (e) {
+      setError(e.message)
+    }
+    setLoading(false)
+  }
+
+  async function handleResend() {
+    setError('')
+    try {
+      await db().auth.resend({ email, type: 'signup' })
+      setResent(true)
+      setTimeout(() => setResent(false), 5000)
+    } catch (e) {
+      setError(e.message)
+    }
+  }
+
+  return (
+    <div style={{ padding: '32px 24px' }}>
+      <div style={{ textAlign: 'center', marginBottom: 32 }}>
+        <div style={{ fontSize: 48, marginBottom: 12 }}>📧</div>
+        <div style={{ fontSize: 22, fontWeight: 900, color: CS.text, marginBottom: 4 }}>
+          Vérifie ton email
+        </div>
+        <div style={{ fontSize: 14, color: CS.muted, lineHeight: 1.6 }}>
+          Un code de vérification a été envoyé à<br />
+          <span style={{ color: CS.accent, fontWeight: 700 }}>{email}</span>
+        </div>
+      </div>
+
+      <StudentFInput
+        label="Code de vérification"
+        type="number"
+        value={code}
+        onChange={v => setCode(v.slice(0, 6))}
+        placeholder="123456"
+        required
+      />
+
+      {error && (
+        <div style={{ color: CS.red, fontSize: 13, marginBottom: 12, background: 'rgba(239,68,68,0.08)', padding: '8px 12px', borderRadius: 8 }}>
+          {error}
+        </div>
+      )}
+      {resent && (
+        <div style={{ color: '#22C55E', fontSize: 13, marginBottom: 12, background: 'rgba(34,197,94,0.08)', padding: '8px 12px', borderRadius: 8 }}>
+          ✅ Code renvoyé !
+        </div>
+      )}
+
+      <StudentBtn onClick={handleVerify} loading={loading}>
+        Valider mon compte
+      </StudentBtn>
+
+      <div style={{ textAlign: 'center', marginTop: 16 }}>
+        <button onClick={handleResend} style={{ background: 'none', border: 'none', color: CS.muted, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'underline' }}>
+          Renvoyer le code
+        </button>
+      </div>
+      <div style={{ textAlign: 'center', marginTop: 8 }}>
+        <button onClick={onBack} style={{ background: 'none', border: 'none', color: CS.accent, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+          ← Modifier mon email
+        </button>
+      </div>
+    </div>
+  )
+}
   const [vue, setVue] = useState('login')
 
   return (
