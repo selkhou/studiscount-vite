@@ -200,6 +200,14 @@ export default function OffreDetail({ offre, etudiant, isFavori, onToggleFavori,
                 <span style={{ color: CS.text, fontSize: 12, lineHeight: 1.5 }}>{s.text}</span>
               </div>
             ))}
+            {etudiant && (
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 2, paddingTop: 6, borderTop: '1px solid rgba(0,102,255,0.1)' }}>
+                <span style={{ fontSize: 16 }}>ℹ️</span>
+                <span style={{ color: CS.muted, fontSize: 11, lineHeight: 1.5 }}>
+                  Les points sont limités à {window.SIOK_PARAMS?.points_max_jour || 5} pts/jour — visite enregistrée même si le plafond est atteint
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
