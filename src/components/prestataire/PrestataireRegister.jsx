@@ -69,7 +69,6 @@ export default function PrestataireRegister({ onSuccess, onBack }) {
       // Ne pas insérer en base avant validation OTP
       setOtpData({ email: form.email, user: authData.user, authId, form: { ...form } })
     } catch (e) { setError(e.message) }
-    } catch (e) { setError(e.message) }
     setSaving(false)
   }
 
