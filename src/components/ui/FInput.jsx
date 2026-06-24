@@ -1,7 +1,12 @@
+import { useState } from 'react'
 import { getC } from '../../constants.js'
 
 export default function FInput({ label, type = 'text', value, onChange, placeholder, hint, disabled, required, prefix }) {
   const C = getC()
+  const [showPwd, setShowPwd] = useState(false)
+  const isPassword = type === 'password'
+  const inputType = isPassword ? (showPwd ? 'text' : 'password') : type
+
   return (
     <div style={{ marginBottom: 14 }}>
       {label && (
@@ -14,7 +19,8 @@ export default function FInput({ label, type = 'text', value, onChange, placehol
         background: disabled ? 'rgba(255,255,255,0.03)' : C.card,
         border: `1px solid ${C.border}`,
         borderRadius: 12, overflow: 'hidden',
-        opacity: disabled ? 0.6 : 1
+        opacity: disabled ? 0.6 : 1,
+        position: 'relative',
       }}>
         {prefix && (
           <span style={{ padding: '0 12px', color: C.muted, fontSize: 14, borderRight: `1px solid ${C.border}`, flexShrink: 0 }}>
@@ -22,16 +28,30 @@ export default function FInput({ label, type = 'text', value, onChange, placehol
           </span>
         )}
         <input
-          type={type}
+          type={inputType}
           value={value}
           onChange={e => onChange(e.target.value)}
           placeholder={placeholder}
           disabled={disabled}
           style={{
             flex: 1, background: 'transparent', border: 'none', outline: 'none',
-            padding: '14px 16px', color: C.text, fontSize: 15, fontFamily: 'inherit'
+            padding: isPassword ? '14px 44px 14px 16px' : '14px 16px',
+            color: C.text, fontSize: 15, fontFamily: 'inherit'
           }}
         />
+        {isPassword && (
+          <button
+            type="button"
+            onClick={() => setShowPwd(v => !v)}
+            style={{
+              position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+              background: 'none', border: 'none', cursor: 'pointer', padding: 4,
+              color: C.muted, fontSize: 18, lineHeight: 1,
+            }}
+          >
+            {showPwd ? '🙈' : '👁️'}
+          </button>
+        )}
       </div>
       {hint && <div style={{ color: C.muted, fontSize: 11, marginTop: 4 }}>{hint}</div>}
     </div>

@@ -30,12 +30,14 @@ export default function PrestataireLogin({ onSuccess, onBack }) {
   }
 
   const sendReset = async () => {
-    if (!resetEmail.trim()) return
-    setResetError(''); setResetLoading(true)
+    setResetError('')
+    if (!resetEmail.trim()) { setResetError('Saisis ton email'); return }
+    setResetLoading(true)
     try {
-      const { error: err } = await db().auth.resetPasswordForEmail(resetEmail.trim(), {
-        redirectTo: window.location.origin
-      })
+      // Vérifier que le prestataire existe
+      const { data: presta } = await db().from('prestataires').select('id').eq('email', resetEmail.trim()).maybeSingle()
+      if (!presta) { setResetError('Aucun compte prestataire trouvé avec cet email'); setResetLoading(false); return }
+      const { error: err } = await db().auth.resetPasswordForEmail(resetEmail.trim(), { redirectTo: window.location.origin })
       if (err) throw err
       setResetSent(true)
     } catch (e) { setResetError(e.message) }
@@ -74,7 +76,7 @@ export default function PrestataireLogin({ onSuccess, onBack }) {
           <div style={{ background: 'rgba(34,197,94,0.1)', borderRadius: 12, padding: '20px', textAlign: 'center' }}>
             <div style={{ fontSize: 40, marginBottom: 8 }}>📧</div>
             <div style={{ color: '#22C55E', fontWeight: 700, fontSize: 15, marginBottom: 6 }}>Email envoyé !</div>
-            <div style={{ color: C.muted, fontSize: 13 }}>Vérifiez votre boîte mail et cliquez sur le lien pour réinitialiser votre mot de passe.</div>
+            <div style={{ color: C.muted, fontSize: 13 }}>Vérifiez votre boîte mail et cliquez sur le lien.</div>
           </div>
         )}
       </div>
@@ -98,16 +100,15 @@ export default function PrestataireLogin({ onSuccess, onBack }) {
           onChange={v => setForm(f => ({ ...f, password: v }))}
           placeholder="••••••••" required />
         {error && (
-          <div style={{
-            background: 'rgba(239,68,68,0.1)', borderRadius: 10,
-            padding: '10px 14px', marginBottom: 14, color: '#ef4444', fontSize: 13
-          }}>⚠️ {error}</div>
+          <div style={{ background: 'rgba(239,68,68,0.1)', borderRadius: 10, padding: '10px 14px', marginBottom: 14, color: '#ef4444', fontSize: 13 }}>
+            ⚠️ {error}
+          </div>
         )}
         <Btn onClick={login} disabled={!form.email || !form.password} loading={loading}>
           Se connecter
         </Btn>
         <div style={{ textAlign: 'center', marginTop: 12 }}>
-          <button onClick={() => { setSubScreen('forgot'); setResetEmail(form.email) }}
+          <button onClick={() => { setSubScreen('forgot'); setResetEmail(form.email); setResetError('') }}
             style={{ background: 'none', border: 'none', color: C.muted, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'underline' }}>
             Mot de passe oublié ?
           </button>

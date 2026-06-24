@@ -11,6 +11,9 @@ function EtudiantLogin({ onSuccess, onRegister, onBack }) {
   const [pwd, setPwd] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [forgotMode, setForgotMode] = useState(false)
+  const [resetSent, setResetSent] = useState(false)
+  const [resetLoading, setResetLoading] = useState(false)
 
   async function handleLogin() {
     setError('')
@@ -19,28 +22,56 @@ function EtudiantLogin({ onSuccess, onRegister, onBack }) {
     try {
       const { data, error: e } = await db().auth.signInWithPassword({ email, password: pwd })
       if (e) { setError(e.message); setLoading(false); return }
-
-      // Attendre que la session soit propagée
       await db().auth.getSession()
-
-      const { data: et } = await db()
-        .from('etudiants')
-        .select('*')
-        .eq('auth_id', data.user.id)
-        .single()
-
-      if (et) {
-        setLoading(false)
-        onSuccess(et)
-      } else {
-        setError('Compte étudiant introuvable')
-        setLoading(false)
-      }
-    } catch (e) {
-      setError(e.message)
-    }
+      const { data: et } = await db().from('etudiants').select('*').eq('auth_id', data.user.id).single()
+      if (et) { setLoading(false); onSuccess(et) }
+      else { setError('Compte étudiant introuvable'); setLoading(false) }
+    } catch (e) { setError(e.message) }
     setLoading(false)
   }
+
+  async function handleReset() {
+    setError('')
+    if (!email) { setError('Saisis ton email'); return }
+    // Vérifier que l'étudiant existe
+    setResetLoading(true)
+    try {
+      const { data: et } = await db().from('etudiants').select('id').eq('email', email).maybeSingle()
+      if (!et) { setError('Aucun compte trouvé avec cet email'); setResetLoading(false); return }
+      const { error: e } = await db().auth.resetPasswordForEmail(email, { redirectTo: window.location.origin })
+      if (e) throw e
+      setResetSent(true)
+    } catch (e) { setError(e.message) }
+    setResetLoading(false)
+  }
+
+  if (forgotMode) return (
+    <div style={{ padding: '32px 24px' }}>
+      <div style={{ textAlign: 'center', marginBottom: 32 }}>
+        <div style={{ fontSize: 48, marginBottom: 12 }}>🔑</div>
+        <div style={{ fontSize: 22, fontWeight: 900, color: CS.text, marginBottom: 4 }}>Mot de passe oublié</div>
+        <div style={{ fontSize: 14, color: CS.muted }}>Saisis ton email pour recevoir un lien de réinitialisation</div>
+      </div>
+      {!resetSent ? (
+        <>
+          <StudentFInput label="Email" type="email" value={email} onChange={setEmail} placeholder="ton@email.com" required />
+          {error && <div style={{ color: CS.red, fontSize: 13, marginBottom: 12, background: 'rgba(239,68,68,0.08)', padding: '8px 12px', borderRadius: 8 }}>{error}</div>}
+          <StudentBtn onClick={handleReset} loading={resetLoading}>Envoyer le lien</StudentBtn>
+        </>
+      ) : (
+        <div style={{ background: 'rgba(34,197,94,0.08)', borderRadius: 12, padding: 20, textAlign: 'center' }}>
+          <div style={{ fontSize: 40, marginBottom: 8 }}>📧</div>
+          <div style={{ color: '#22C55E', fontWeight: 700, fontSize: 15, marginBottom: 6 }}>Email envoyé !</div>
+          <div style={{ color: CS.muted, fontSize: 13 }}>Vérifie ta boîte mail et clique sur le lien.</div>
+        </div>
+      )}
+      <div style={{ textAlign: 'center', marginTop: 16 }}>
+        <button onClick={() => { setForgotMode(false); setResetSent(false); setError('') }} style={{ background: 'none', border: 'none', color: CS.accent, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+          ← Retour à la connexion
+        </button>
+      </div>
+    </div>
+  )
 
   return (
     <div style={{ padding: '32px 24px' }}>
@@ -84,6 +115,15 @@ function EtudiantLogin({ onSuccess, onRegister, onBack }) {
       <StudentBtn onClick={handleLogin} loading={loading}>
         Se connecter
       </StudentBtn>
+
+      <div style={{ textAlign: 'center', marginTop: 12 }}>
+        <button onClick={() => { setForgotMode(true); setError('') }} style={{
+          background: 'none', border: 'none', color: CS.muted,
+          fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'underline'
+        }}>
+          Mot de passe oublié ?
+        </button>
+      </div>
 
       <div style={{ textAlign: 'center', marginTop: 20 }}>
         <button onClick={onRegister} style={{
