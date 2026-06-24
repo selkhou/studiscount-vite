@@ -108,14 +108,18 @@ function EtudiantRegister({ onSuccess, onBack }) {
   const [otpData, setOtpData] = useState(null) // { email, prenom, authId }
 
   async function handleRegister() {
+    console.log('DEBUG: handleRegister appelé')
     setError('')
     if (!email || !prenom || !pwd) { setError('Remplis tous les champs'); return }
     if (pwd.length < 8) { setError('Mot de passe : 8 caractères minimum'); return }
     if (pwd !== pwd2) { setError('Les mots de passe ne correspondent pas'); return }
     setLoading(true)
     try {
+      console.log('DEBUG: appel signUp...')
       const { data, error: e } = await db().auth.signUp({ email, password: pwd })
+      console.log('DEBUG: signUp résultat', { data, error: e })
       if (e) { setError(e.message); setLoading(false); return }
+      console.log('DEBUG: setOtpData appelé avec', { email, prenom, authId: data.user?.id })
       setOtpData({ email, prenom, authId: data.user?.id })
     } catch (e) {
       setError(e.message)
@@ -123,7 +127,9 @@ function EtudiantRegister({ onSuccess, onBack }) {
     setLoading(false)
   }
 
-  if (otpData) return (
+  if (otpData) {
+    console.log('DEBUG: rendu EtudiantOTP avec', otpData)
+    return (
     <EtudiantOTP
       email={otpData.email}
       prenom={otpData.prenom}
@@ -132,6 +138,7 @@ function EtudiantRegister({ onSuccess, onBack }) {
       onBack={() => setOtpData(null)}
     />
   )
+  }
 
   return (
     <div style={{ padding: '32px 24px' }}>
