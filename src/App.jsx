@@ -51,7 +51,13 @@ export default function App() {
 
     if (code) {
       db().auth.exchangeCodeForSession(code).then(({ data, error }) => {
-        if (!error && data?.session) setResetMode(true)
+        if (!error && data?.session) {
+          // Vérifier si c'est un reset password
+          const urlType = params.get('type')
+          if (urlType === 'recovery' || data.session?.user?.recovery_sent_at) {
+            setResetMode(true)
+          }
+        }
         window.history.replaceState(null, '', window.location.pathname)
       })
       return
