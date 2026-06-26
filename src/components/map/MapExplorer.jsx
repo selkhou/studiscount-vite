@@ -11,7 +11,6 @@ import PhotoCarousel from '../ui/PhotoCarousel.jsx'
 import MapContainer from './MapContainer.jsx'
 import NavFiltres from '../etudiant/NavFiltres.jsx'
 import OffreDetail from '../offres/OffreDetail.jsx'
-import ModalSuggestion from '../etudiant/ModalSuggestion.jsx'
 import ModalPointsCadeaux from '../ui/ModalPointsCadeaux.jsx'
 import EtudiantDashboard from '../etudiant/EtudiantDashboard.jsx'
 import useImpressionTracker from '../../hooks/useImpressionTracker.js'
@@ -191,7 +190,6 @@ export default function MapExplorer({ onConnecte, onPrestataire }) {
   const [selected, setSelected] = useState(null)
   const [showChoixProfil, setShowChoixProfil] = useState(false)
   const [showFavoriMsg, setShowFavoriMsg] = useState(false)
-  const [showSuggestion, setShowSuggestion] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [showLogin, setShowLogin] = useState(false)
   const [showReco, setShowReco] = useState(false)
@@ -381,18 +379,6 @@ export default function MapExplorer({ onConnecte, onPrestataire }) {
           </svg>
         </button>
       )}
-
-      {/* FAB Idée — masqué en mode landing */}
-      {viewMode === 'list' && !window.LANDING_MODE && (
-        <button onClick={() => setShowSuggestion(true)}
-          style={{ position: 'fixed', bottom: 76, right: 16, width: 48, height: 48, borderRadius: '50%', background: '#0066FF', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 150, boxShadow: '0 4px 16px rgba(0,102,255,0.4)' }}>
-          <svg width="24" height="24" viewBox="0 -960 960 960" fill="white">
-            <path d="M480-80q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80ZM320-200v-80h320v80H320Zm10-120q-69-41-109.5-110T180-580q0-125 87.5-212.5T480-880q125 0 212.5 87.5T780-580q0 78-40.5 147T630-320H330Z" />
-          </svg>
-        </button>
-      )}
-
-      {showSuggestion && <ModalSuggestion nom={null} type="etudiant_anon" etudiantId={null} onClose={() => setShowSuggestion(false)} />}
 
       {/* Modal points cadeaux */}
       {showModal && (

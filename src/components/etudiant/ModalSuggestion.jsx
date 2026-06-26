@@ -4,7 +4,7 @@ import { db } from '../../lib/supabase.js'
 import StarRating from '../ui/StarRating.jsx'
 import StudentBtn from '../ui/StudentBtn.jsx'
 
-export default function ModalSuggestion({ nom, type, onClose, etudiantId }) {
+export default function ModalSuggestion({ nom, type, onClose }) {
   const [commentaire, setCommentaire] = useState('')
   const [note, setNote] = useState(0)
   const [nomSaisi, setNomSaisi] = useState(nom || '')
@@ -16,8 +16,6 @@ export default function ModalSuggestion({ nom, type, onClose, etudiantId }) {
     if (!commentaire.trim()) return setError('Merci d\'écrire votre suggestion')
     if (!note) return setError('Merci de donner une note')
     setSaving(true); setError('')
-    try {
-      console.log('note envoyée:', note)
       const { error: e } = await db().from('suggestions').insert({
         nom: nomSaisi.trim() || null,
         type,
@@ -57,14 +55,6 @@ export default function ModalSuggestion({ nom, type, onClose, etudiantId }) {
               <div style={{ fontSize: 52, marginBottom: 12 }}>🎉</div>
               <div style={{ color: '#22C55E', fontWeight: 800, fontSize: 18 }}>Merci pour votre suggestion !</div>
               <div style={{ color: CS.muted, fontSize: 13, marginTop: 6 }}>Elle a bien été enregistrée.</div>
-            </div>
-          ) : !etudiantId ? (
-            <div style={{ textAlign: 'center', padding: '20px 0' }}>
-              <div style={{ fontSize: 48, marginBottom: 12 }}>🔒</div>
-              <div style={{ color: CS.text, fontWeight: 800, fontSize: 18, marginBottom: 8 }}>Connexion requise</div>
-              <div style={{ color: CS.muted, fontSize: 13, lineHeight: 1.6 }}>
-                Crée un compte ou connecte-toi pour envoyer une suggestion.
-              </div>
             </div>
           ) : (
             <>
