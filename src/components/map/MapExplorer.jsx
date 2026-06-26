@@ -392,7 +392,7 @@ export default function MapExplorer({ onConnecte, onPrestataire }) {
         </button>
       )}
 
-      {showSuggestion && <ModalSuggestion nom={null} type="etudiant_anon" onClose={() => setShowSuggestion(false)} />}
+      {showSuggestion && <ModalSuggestion nom={null} type="etudiant_anon" etudiantId={null} onClose={() => setShowSuggestion(false)} />}
 
       {/* Modal points cadeaux */}
       {showModal && (

@@ -24,17 +24,32 @@ export default function QRSimulateur({ prestataireId, onScanned, onClose }) {
         offre_id: qr.offreId,
         prestataire_id: prestataireId,
         etudiant_id: qr.etudiantId === 'anon' ? null : qr.etudiantId,
-        points: qr.etudiantId && qr.etudiantId !== 'anon' ? (parseInt(window.SIOK_PARAMS?.points_qrc) || 3) : 0,
+        points: 0, // sera mis à jour après vérification plafond
       })
       if (insertErr) throw new Error('Erreur insert: ' + insertErr.message)
 
       if (qr.etudiantId && qr.etudiantId !== 'anon') {
         const { data: etList } = await db().from('etudiants').select('id,points').eq('id', qr.etudiantId).limit(1)
         const et = etList && etList.length > 0 ? etList[0] : null
-        if (et) await db().from('etudiants').update({ points: (et.points || 0) + (parseInt(window.SIOK_PARAMS?.points_qrc) || 3) }).eq('id', qr.etudiantId)
-      }
 
-      setResult({ offre, etudiant_id: qr.etudiantId })
+        // Vérifier le plafond journalier avant d'attribuer les points
+        const today = new Date(); today.setHours(0, 0, 0, 0)
+        const { data: visitesJour } = await db().from('visites')
+          .select('points')
+          .eq('etudiant_id', qr.etudiantId)
+          .gte('created_at', today.toISOString())
+        const pointsJour = (visitesJour || []).reduce((s, v) => s + (v.points || 0), 0)
+        const pointsMax = parseInt(window.SIOK_PARAMS?.points_max_jour) || 5
+        const pointsQrc = parseInt(window.SIOK_PARAMS?.points_qrc) || 3
+        const pointsAttribues = pointsJour >= pointsMax ? 0 : pointsQrc
+
+        if (et && pointsAttribues > 0) {
+          await db().from('etudiants').update({ points: (et.points || 0) + pointsAttribues }).eq('id', qr.etudiantId)
+        }
+        setResult({ offre, etudiant_id: qr.etudiantId, pointsAttribues })
+      } else {
+        setResult({ offre, etudiant_id: qr.etudiantId, pointsAttribues: 0 })
+      }
       onScanned && onScanned()
     } catch (e) { setError(e.message) }
     setSaving(false)
@@ -56,7 +71,11 @@ export default function QRSimulateur({ prestataireId, onScanned, onClose }) {
         <div style={{ background: 'rgba(34,197,94,0.1)', borderRadius: 10, padding: '10px 12px', marginBottom: 8 }}>
           <div style={{ color: '#22c55e', fontWeight: 700, fontSize: 13 }}>✅ Visite validée — {result.offre?.titre}</div>
           <div style={{ color: C.muted, fontSize: 11, marginTop: 2 }}>
-            {result.etudiant_id && result.etudiant_id !== 'anon' ? '🎓 +3 points crédités' : '👤 Visite anonyme'}
+            {result.etudiant_id && result.etudiant_id !== 'anon'
+              ? result.pointsAttribues > 0
+                ? `🎓 +${result.pointsAttribues} points crédités`
+                : '⚠️ Plafond journalier atteint — visite enregistrée, 0 point'
+              : '👤 Visite anonyme'}
           </div>
         </div>
       )}
