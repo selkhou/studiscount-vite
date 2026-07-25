@@ -59,6 +59,25 @@ export default function QRGenerator({ offre, etudiant, onClose }) {
   const isWarning = timeLeft < 30 * 1000
 
   // Écran validé
+  const appActive = window.SIOK_PARAMS?.app_etudiant_active === 'true'
+  const isTester = etudiant?.is_tester === true
+
+  if (!appActive && !isTester) return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ background: 'white', borderRadius: 20, padding: 28, maxWidth: 320, margin: 16, textAlign: 'center' }}>
+        <div style={{ fontSize: 48, marginBottom: 12 }}>🚀</div>
+        <div style={{ fontSize: 18, fontWeight: 800, color: '#0A0E1F', marginBottom: 8 }}>Bientôt disponible !</div>
+        <div style={{ fontSize: 14, color: '#6B7280', lineHeight: 1.6, marginBottom: 20 }}>
+          Les QR codes seront activés le<br/>
+          <strong style={{ color: '#0066FF' }}>{window.SIOK_PARAMS?.date_lancement || '1er septembre 2026'}</strong>
+        </div>
+        <button onClick={onClose} style={{ padding: '12px 24px', borderRadius: 12, border: 'none', background: '#0066FF', color: 'white', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+          Fermer
+        </button>
+      </div>
+    </div>
+  )
+
   if (validated) return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <div style={{ background: '#FFFFFF', borderRadius: 24, padding: '36px 28px', width: '100%', maxWidth: 340, textAlign: 'center' }}>

@@ -174,13 +174,24 @@ export default function OffreDetail({ offre, etudiant, isFavori, onToggleFavori,
 
        
         {/* Bouton QR — visible pour tous */}
-        <button onClick={onQR}
+        {(() => {
+          const appActive = window.SIOK_PARAMS?.app_etudiant_active === 'true'
+          const isTester = etudiant?.is_tester === true
+          if (!appActive && !isTester) return (
+            <div style={{ margin: '16px 0', padding: '12px 16px', background: 'rgba(245,158,11,0.1)', borderRadius: 12, border: '1px solid rgba(245,158,11,0.3)', textAlign: 'center' }}>
+              <div style={{ fontSize: 20, marginBottom: 4 }}>🚀</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#F59E0B', marginBottom: 2 }}>Disponible le {window.SIOK_PARAMS?.date_lancement || '1er septembre 2026'}</div>
+              <div style={{ fontSize: 12, color: CS.muted }}>Les QR codes seront activés au lancement de l'application</div>
+            </div>
+          )
+          return (
+            <button onClick={onQR}
           style={{ width: '100%', padding: '14px 0', borderRadius: 14, border: 'none', background: CS.accent, color: 'white', fontSize: 15, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', marginBottom: 10, boxShadow: `0 4px 14px ${CS.accentGlow}`, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
           <span style={{ fontSize: 20 }}>📱</span>
           Générer mon QR code pour validation par le commerçant
         </button>
-
-        {!etudiant && (
+          )
+        })()}
           <div style={{ background: '#F0F9FF', border: '1px solid rgba(0,102,255,0.15)', borderRadius: 12, padding: '10px 14px', marginBottom: 10, fontSize: 12, color: CS.muted, textAlign: 'center' }}>
             💡 <button onClick={onToggleFavori} style={{ background: 'none', border: 'none', color: CS.accent, fontWeight: 700, cursor: 'pointer', fontSize: 12, fontFamily: 'inherit' }}>Crée ton compte</button> pour cumuler des points à chaque visite
           </div>
