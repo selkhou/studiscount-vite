@@ -350,11 +350,25 @@ export default function MapExplorer({ onConnecte, onPrestataire }) {
       {/* Modal détail offre */}
       {selected && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 2850, background: '#F5F5F5', overflowY: 'auto', display: 'flex', flexDirection: 'column', paddingBottom: 64 }}>
+          {window.SIOK_PARAMS?.app_etudiant_active !== 'true' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: 24, textAlign: 'center' }}>
+              <div style={{ fontSize: 52, marginBottom: 12 }}>🚀</div>
+              <div style={{ fontSize: 20, fontWeight: 900, color: '#0A0E1F', marginBottom: 8 }}>Bientôt disponible !</div>
+              <div style={{ fontSize: 14, color: '#6B7280', lineHeight: 1.7, marginBottom: 20 }}>
+                Les offres seront accessibles le<br/>
+                <span style={{ fontWeight: 800, color: '#0066FF' }}>{window.SIOK_PARAMS?.date_lancement || '1er septembre 2026'}</span>
+              </div>
+              <button onClick={() => setSelected(null)} style={{ padding: '12px 24px', borderRadius: 12, border: 'none', background: '#0066FF', color: 'white', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                ← Retour aux offres
+              </button>
+            </div>
+          ) : (
           <OffreDetail offre={selected} etudiant={null} isFavori={false}
             onToggleFavori={() => !window.LANDING_MODE && setShowLogin(true)}
             onClose={() => setSelected(null)}
             onQR={() => { setQrOffre(selected); setShowQR(true) }}
           />
+          )}
         </div>
       )}
 
