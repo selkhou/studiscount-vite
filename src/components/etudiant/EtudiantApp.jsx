@@ -463,6 +463,11 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
 
   const totalPoints = points
 
+  // Vérification app active pour blocages partiels
+  const appActive = window.SIOK_PARAMS?.app_etudiant_active === 'true'
+  const isTester = etudiant?.is_tester === true
+  const blocked = !appActive && !isTester
+
   return (
     <div style={{ minHeight: '100vh', background: fondPerso || window.SIOK_PARAMS?.fond_couleur || '#F5F5F5', display: 'flex', flexDirection: 'column' }}>
 
@@ -640,6 +645,19 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
       {/* Modal détail offre */}
       {selected && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 2850, background: '#F5F5F5', overflowY: 'auto', display: 'flex', flexDirection: 'column', paddingBottom: 64 }}>
+          {blocked ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: 24, textAlign: 'center' }}>
+              <div style={{ fontSize: 52, marginBottom: 12 }}>🚀</div>
+              <div style={{ fontSize: 20, fontWeight: 900, color: '#0A0E1F', marginBottom: 8 }}>Bientôt disponible !</div>
+              <div style={{ fontSize: 14, color: '#6B7280', lineHeight: 1.7, marginBottom: 20 }}>
+                Les offres seront accessibles le<br/>
+                <span style={{ fontWeight: 800, color: '#0066FF' }}>{window.SIOK_PARAMS?.date_lancement || '1er septembre 2026'}</span>
+              </div>
+              <button onClick={() => setSelected(null)} style={{ padding: '12px 24px', borderRadius: 12, border: 'none', background: '#0066FF', color: 'white', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                ← Retour aux offres
+              </button>
+            </div>
+          ) : (
           <OffreDetail
             offre={selected} etudiant={etudiant}
             isFavori={favIds.has(selected.id)}
@@ -647,6 +665,7 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
             onClose={() => setSelected(null)}
             onQR={() => { setQrOffre(selected); setShowQR(true) }}
           />
+          )}
         </div>
       )}
 
@@ -852,9 +871,9 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
           {viewMode === 'list' ? <IcoListe active={true} /> : <IcoCarte active={true} />}
           <span style={{ color: '#0066FF' }}>{viewMode === 'list' ? 'Liste' : 'Carte'}</span>
         </button>
-        <button className="siok-bottom-btn" style={{ flex: 1.2 }} onClick={() => setShowModal(true)}>
+        <button className="siok-bottom-btn" style={{ flex: 1.2 }} onClick={() => blocked ? null : setShowModal(true)}>
           <SIOKLogo size="sm" />
-          <span style={{ fontSize: 9, color: '#9CA3AF', marginTop: 1 }}>StuD</span>
+          <span style={{ fontSize: 9, color: blocked ? '#D1D5DB' : '#9CA3AF', marginTop: 1 }}>StuD</span>
         </button>
         <button className="siok-bottom-btn" onClick={() => { setShowProfile(!showProfile); setProfileTab('Détails') }}>
           <IcoProfil active={true} />
