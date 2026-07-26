@@ -117,8 +117,8 @@ export default function PrestataireLogin({ onSuccess, onBack }) {
           <div style={{ color: C.muted, fontSize: 13, marginBottom: 10 }}>Pas encore de compte ?</div>
           <button onClick={() => setSubScreen('register')} style={{
             padding: '12px 24px', borderRadius: 12,
-            border: '1px solid rgba(0,102,255,0.4)',
-            background: 'rgba(0,102,255,0.08)', color: '#0066FF',
+            border: '2px solid #0066FF',
+            background: '#FFFFFF', color: '#0066FF',
             fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit'
           }}>
             Créer mon compte prestataire →
