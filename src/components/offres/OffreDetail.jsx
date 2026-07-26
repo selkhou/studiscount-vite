@@ -192,6 +192,8 @@ export default function OffreDetail({ offre, etudiant, isFavori, onToggleFavori,
         </button>
           )
         })()}
+
+        {!etudiant && (
           <div style={{ background: '#F0F9FF', border: '1px solid rgba(0,102,255,0.15)', borderRadius: 12, padding: '10px 14px', marginBottom: 10, fontSize: 12, color: CS.muted, textAlign: 'center' }}>
             💡 <button onClick={onToggleFavori} style={{ background: 'none', border: 'none', color: CS.accent, fontWeight: 700, cursor: 'pointer', fontSize: 12, fontFamily: 'inherit' }}>Crée ton compte</button> pour cumuler des points à chaque visite
           </div>
