@@ -201,6 +201,8 @@ export default function MapExplorer({ onConnecte, onPrestataire }) {
   const [landingStep, setLandingStep] = useState('choix')
   const [landingPrenom, setLandingPrenom] = useState('')
   const [landingEmail, setLandingEmail] = useState('')
+  const [landingPwd, setLandingPwd] = useState('')
+  const [landingShowPwd, setLandingShowPwd] = useState(false)
   const [landingLoading, setLandingLoading] = useState(false)
   const [landingErr, setLandingErr] = useState('')
   const listRef = useRef(null)
@@ -461,20 +463,41 @@ export default function MapExplorer({ onConnecte, onPrestataire }) {
               <input value={landingEmail} onChange={e => setLandingEmail(e.target.value)}
                 placeholder="Ton email" type="email"
                 style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #E5E7EB', fontSize: 13, fontFamily: 'inherit', outline: 'none', marginBottom: 8 }} />
+              <div style={{ position: 'relative', marginBottom: 8 }}>
+                <input value={landingPwd} onChange={e => setLandingPwd(e.target.value)}
+                  placeholder="Ton mot de passe (8 car. min.)" type={landingShowPwd ? 'text' : 'password'}
+                  style={{ width: '100%', padding: '10px 40px 10px 12px', borderRadius: 10, border: '1.5px solid #E5E7EB', fontSize: 13, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
+                <button type="button" onClick={() => setLandingShowPwd(v => !v)}
+                  style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: '#9CA3AF' }}>
+                  {landingShowPwd ? '🙈' : '👁️'}
+                </button>
+              </div>
               <button disabled={landingLoading} onClick={async () => {
                 if (!landingPrenom.trim()) { setLandingErr('Prénom requis'); return }
                 if (!landingEmail.includes('@')) { setLandingErr('Email invalide'); return }
+                if (landingPwd.length < 8) { setLandingErr('Mot de passe : 8 caractères minimum'); return }
                 setLandingLoading(true); setLandingErr('')
                 try {
+                  // Vérifier si déjà inscrit
                   const { data: existing } = await db().from('etudiants').select('id').eq('email', landingEmail.trim().toLowerCase()).limit(1)
                   let etId = null
                   if (existing && existing.length > 0) {
                     etId = existing[0].id
                   } else {
+                    // Créer le compte Auth Supabase
+                    const { data: authData, error: authErr } = await db().auth.signUp({
+                      email: landingEmail.trim().toLowerCase(),
+                      password: landingPwd
+                    })
+                    if (authErr) throw authErr
+                    // Insérer dans etudiants avec 50 points bonus
                     const { error } = await db().from('etudiants').insert({
+                      auth_id: authData.user?.id,
                       prenom: landingPrenom.trim(),
                       email: landingEmail.trim().toLowerCase(),
-                      points: 50, pre_inscrit: true,
+                      points: 50,
+                      pre_inscrit: true,
+                      statut_validation: 'en_attente',
                       created_at: new Date().toISOString()
                     })
                     if (error) throw error
@@ -484,7 +507,7 @@ export default function MapExplorer({ onConnecte, onPrestataire }) {
                   await db().from('scans_landing').insert({ reponse: 'inscrit', etudiant_id: etId })
                   setLandingStep('merci_inscrit')
                   setTimeout(() => setLandingBanner(false), 5000)
-                } catch (e) { setLandingErr('Erreur, réessaie dans un instant.') }
+                } catch (e) { setLandingErr(e.message || 'Erreur, réessaie dans un instant.') }
                 setLandingLoading(false)
               }}
                 style={{ width: '100%', padding: '12px', borderRadius: 12, border: 'none', background: landingLoading ? '#D1D5DB' : 'linear-gradient(135deg,#0066FF,#3399FF)', color: 'white', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' }}>
