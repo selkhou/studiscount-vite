@@ -268,7 +268,7 @@ function EtudiantOTP({ email, prenom, authId, onSuccess, onBack }) {
           email,
           prenom,
           statut_validation: 'en_attente',
-          points: 0,
+          points: 50,
         })
         .select()
         .single()
