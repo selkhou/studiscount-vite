@@ -37,7 +37,7 @@ export default function PrestataireLogin({ onSuccess, onBack }) {
       // Vérifier que le prestataire existe
       const { data: presta } = await db().from('prestataires').select('id').eq('email', resetEmail.trim()).maybeSingle()
       if (!presta) { setResetError('Aucun compte prestataire trouvé avec cet email'); setResetLoading(false); return }
-      const { error: err } = await db().auth.resetPasswordForEmail(resetEmail.trim(), { redirectTo: window.location.origin })
+      const { error: err } = await db().auth.resetPasswordForEmail(resetEmail.trim(), { redirectTo: window.location.origin + '?type=recovery' })
       if (err) throw err
       setResetSent(true)
     } catch (e) { setResetError(e.message) }

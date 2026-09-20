@@ -45,6 +45,7 @@ export default function App() {
     const params = new URLSearchParams(window.location.search)
     const hashParams = new URLSearchParams(window.location.hash.replace('#', ''))
     const code = params.get('code')
+    const typeParam = params.get('type')
     const errorDesc = params.get('error_description') || hashParams.get('error_description')
 
     if (errorDesc) {
@@ -54,7 +55,11 @@ export default function App() {
 
     if (code) {
       // exchangeCodeForSession déclenche onAuthStateChange avec PASSWORD_RECOVERY si c'est un reset
-      db().auth.exchangeCodeForSession(code).then(() => {
+      db().auth.exchangeCodeForSession(code).then(({ data, error }) => {
+        // Si ?type=recovery était dans l'URL de redirect, forcer le reset mode
+        if (typeParam === 'recovery' && !error && data?.session) {
+          setResetMode(true)
+        }
         window.history.replaceState(null, '', window.location.pathname)
       })
       return () => subscription.unsubscribe()
@@ -63,7 +68,7 @@ export default function App() {
     // Fallback hash token (ancien flow Supabase)
     const accessToken = hashParams.get('access_token')
     const type = hashParams.get('type')
-    if (accessToken && type === 'recovery') {
+    if ((accessToken && type === 'recovery') || typeParam === 'recovery') {
       db().auth.getSession().then(({ data: { session } }) => {
         if (session) setResetMode(true)
       })

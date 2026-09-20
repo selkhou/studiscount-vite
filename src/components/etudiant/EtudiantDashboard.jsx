@@ -38,7 +38,7 @@ function EtudiantLogin({ onSuccess, onRegister, onBack }) {
     try {
       const { data: et } = await db().from('etudiants').select('id').eq('email', email).maybeSingle()
       if (!et) { setError('Aucun compte trouvé avec cet email'); setResetLoading(false); return }
-      const { error: e } = await db().auth.resetPasswordForEmail(email, { redirectTo: window.location.origin })
+      const { error: e } = await db().auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '?type=recovery' })
       if (e) throw e
       setResetSent(true)
     } catch (e) { setError(e.message) }
