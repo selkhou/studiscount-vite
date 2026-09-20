@@ -203,6 +203,8 @@ export default function MapExplorer({ onConnecte, onPrestataire }) {
   const [landingEmail, setLandingEmail] = useState('')
   const [landingPwd, setLandingPwd] = useState('')
   const [landingShowPwd, setLandingShowPwd] = useState(false)
+  const [landingOtp, setLandingOtp] = useState('')
+  const [landingAuthId, setLandingAuthId] = useState(null)
   const [landingLoading, setLandingLoading] = useState(false)
   const [landingErr, setLandingErr] = useState('')
   const listRef = useRef(null)
@@ -480,33 +482,20 @@ export default function MapExplorer({ onConnecte, onPrestataire }) {
                 try {
                   // Vérifier si déjà inscrit
                   const { data: existing } = await db().from('etudiants').select('id').eq('email', landingEmail.trim().toLowerCase()).limit(1)
-                  let etId = null
                   if (existing && existing.length > 0) {
-                    etId = existing[0].id
+                    await db().from('scans_landing').insert({ reponse: 'inscrit', etudiant_id: existing[0].id })
+                    setLandingStep('merci_inscrit')
+                    setTimeout(() => setLandingBanner(false), 5000)
                   } else {
-                    // Créer le compte Auth Supabase
+                    // Créer le compte Auth Supabase → envoie OTP automatiquement
                     const { data: authData, error: authErr } = await db().auth.signUp({
                       email: landingEmail.trim().toLowerCase(),
                       password: landingPwd
                     })
                     if (authErr) throw authErr
-                    // Insérer dans etudiants avec 50 points bonus
-                    const { error } = await db().from('etudiants').insert({
-                      auth_id: authData.user?.id,
-                      prenom: landingPrenom.trim(),
-                      email: landingEmail.trim().toLowerCase(),
-                      points: 50,
-                      pre_inscrit: true,
-                      statut_validation: 'en_attente',
-                      created_at: new Date().toISOString()
-                    })
-                    if (error) throw error
-                    const { data: fetched } = await db().from('etudiants').select('id').eq('email', landingEmail.trim().toLowerCase()).limit(1)
-                    etId = fetched && fetched.length > 0 ? fetched[0].id : null
+                    setLandingAuthId(authData.user?.id)
+                    setLandingStep('otp')
                   }
-                  await db().from('scans_landing').insert({ reponse: 'inscrit', etudiant_id: etId })
-                  setLandingStep('merci_inscrit')
-                  setTimeout(() => setLandingBanner(false), 5000)
                 } catch (e) { setLandingErr(e.message || 'Erreur, réessaie dans un instant.') }
                 setLandingLoading(false)
               }}
@@ -516,11 +505,66 @@ export default function MapExplorer({ onConnecte, onPrestataire }) {
             </div>
           )}
 
+          {landingStep === 'otp' && (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <button onClick={() => setLandingStep('form')} style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 18, color: '#9CA3AF' }}>←</button>
+                <div style={{ fontWeight: 800, fontSize: 14, color: '#1A1A2E' }}>📧 Vérifie ton email</div>
+              </div>
+              <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 10, lineHeight: 1.5 }}>
+                Un code a été envoyé à <strong>{landingEmail}</strong>.<br/>Saisis-le pour valider ton inscription.
+              </div>
+              {landingErr && <div style={{ color: '#EF4444', fontSize: 12, marginBottom: 8 }}>{landingErr}</div>}
+              <input value={landingOtp} onChange={e => setLandingOtp(e.target.value.replace(/\D/g,'').slice(0,6))}
+                placeholder="Code à 6 chiffres" type="number"
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #E5E7EB', fontSize: 18, fontFamily: 'inherit', outline: 'none', marginBottom: 8, textAlign: 'center', letterSpacing: 4 }} />
+              <button disabled={landingLoading || landingOtp.length < 6} onClick={async () => {
+                setLandingLoading(true); setLandingErr('')
+                try {
+                  const { error: otpErr } = await db().auth.verifyOtp({
+                    email: landingEmail.trim().toLowerCase(),
+                    token: landingOtp,
+                    type: 'signup'
+                  })
+                  if (otpErr) throw otpErr
+                  // OTP validé → insérer dans etudiants
+                  const { error } = await db().from('etudiants').insert({
+                    auth_id: landingAuthId,
+                    prenom: landingPrenom.trim(),
+                    email: landingEmail.trim().toLowerCase(),
+                    points: 50,
+                    pre_inscrit: true,
+                    statut_validation: 'en_attente',
+                    created_at: new Date().toISOString()
+                  })
+                  if (error) throw error
+                  const { data: fetched } = await db().from('etudiants').select('id').eq('email', landingEmail.trim().toLowerCase()).limit(1)
+                  const etId = fetched && fetched.length > 0 ? fetched[0].id : null
+                  await db().from('scans_landing').insert({ reponse: 'inscrit', etudiant_id: etId })
+                  setLandingStep('merci_inscrit')
+                  setTimeout(() => setLandingBanner(false), 6000)
+                } catch (e) { setLandingErr(e.message || 'Code invalide, réessaie.') }
+                setLandingLoading(false)
+              }} style={{ width: '100%', padding: '12px', borderRadius: 12, border: 'none', background: landingLoading || landingOtp.length < 6 ? '#D1D5DB' : 'linear-gradient(135deg,#0066FF,#3399FF)', color: 'white', fontSize: 13, fontWeight: 800, cursor: landingOtp.length < 6 ? 'default' : 'pointer', fontFamily: 'inherit' }}>
+                {landingLoading ? '...' : 'Valider mon inscription 🚀'}
+              </button>
+              <div style={{ textAlign: 'center', marginTop: 8 }}>
+                <button onClick={async () => {
+                  await db().auth.resend({ email: landingEmail.trim().toLowerCase(), type: 'signup' })
+                  setLandingErr('Code renvoyé !')
+                }} style={{ background: 'none', border: 'none', color: '#9CA3AF', fontSize: 11, cursor: 'pointer', textDecoration: 'underline', fontFamily: 'inherit' }}>
+                  Renvoyer le code
+                </button>
+              </div>
+            </div>
+          )}
+
           {landingStep === 'merci_inscrit' && (
             <div style={{ textAlign: 'center', padding: '8px 0' }}>
               <div style={{ fontSize: 32, marginBottom: 4 }}>🎉</div>
-              <div style={{ fontWeight: 800, fontSize: 15, color: '#1A1A2E', marginBottom: 4 }}>C'est fait ! 50 pts ⭐ t'attendent</div>
-              <div style={{ fontSize: 12, color: '#6B7280' }}>{`Connecte-toi le ${window.SIOK_PARAMS?.date_lancement || '1er juillet 2026'} avec cet email`}</div>
+              <div style={{ fontWeight: 800, fontSize: 15, color: '#1A1A2E', marginBottom: 6 }}>Inscription confirmée !</div>
+              <div style={{ fontSize: 13, color: '#22C55E', fontWeight: 700, marginBottom: 4 }}>⭐ 50 points cadeaux t'attendent !</div>
+              <div style={{ fontSize: 12, color: '#6B7280', lineHeight: 1.6 }}>Tu seras informé(e) par email dès que l'application sera ouverte.</div>
             </div>
           )}
 
