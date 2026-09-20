@@ -37,42 +37,39 @@ export default function App() {
   }
 
   useEffect(() => {
+    // Écouter PASSWORD_RECOVERY EN PREMIER avant tout échange de code
+    const { data: { subscription } } = db().auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') setResetMode(true)
+    })
+
     const params = new URLSearchParams(window.location.search)
     const hashParams = new URLSearchParams(window.location.hash.replace('#', ''))
     const code = params.get('code')
-    const type = params.get('type') || hashParams.get('type')
     const errorDesc = params.get('error_description') || hashParams.get('error_description')
 
     if (errorDesc) {
-      console.warn('Auth error:', errorDesc)
       window.history.replaceState(null, '', window.location.pathname)
-      return
+      return () => subscription.unsubscribe()
     }
 
     if (code) {
-      db().auth.exchangeCodeForSession(code).then(({ data, error }) => {
-        if (!error && data?.session) {
-          // Vérifier si c'est un reset password
-          const urlType = params.get('type')
-          if (urlType === 'recovery' || data.session?.user?.recovery_sent_at) {
-            setResetMode(true)
-          }
-        }
+      // exchangeCodeForSession déclenche onAuthStateChange avec PASSWORD_RECOVERY si c'est un reset
+      db().auth.exchangeCodeForSession(code).then(() => {
         window.history.replaceState(null, '', window.location.pathname)
       })
-      return
+      return () => subscription.unsubscribe()
     }
 
-    if (type === 'recovery' || hashParams.get('access_token')) {
+    // Fallback hash token (ancien flow Supabase)
+    const accessToken = hashParams.get('access_token')
+    const type = hashParams.get('type')
+    if (accessToken && type === 'recovery') {
       db().auth.getSession().then(({ data: { session } }) => {
         if (session) setResetMode(true)
       })
       window.history.replaceState(null, '', window.location.pathname)
     }
 
-    const { data: { subscription } } = db().auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') setResetMode(true)
-    })
     return () => subscription.unsubscribe()
   }, [])
 
