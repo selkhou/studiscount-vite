@@ -301,7 +301,8 @@ function EtudiantOTP({ email, prenom, authId, onSuccess, onBack }) {
         </div>
         <div style={{ fontSize: 14, color: CS.muted, lineHeight: 1.6 }}>
           Un code de vérification a été envoyé à<br />
-          <span style={{ color: CS.accent, fontWeight: 700 }}>{email}</span>
+          <span style={{ color: CS.accent, fontWeight: 700 }}>{email}</span><br/>
+          <span style={{ color: '#F59E0B', fontWeight: 600, fontSize: 13 }}>📬 Si tu ne le reçois pas, vérifie tes spams.</span>
         </div>
       </div>
 

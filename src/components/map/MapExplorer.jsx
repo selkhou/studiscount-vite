@@ -512,7 +512,8 @@ export default function MapExplorer({ onConnecte, onPrestataire }) {
                 <div style={{ fontWeight: 800, fontSize: 14, color: '#1A1A2E' }}>📧 Vérifie ton email</div>
               </div>
               <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 10, lineHeight: 1.5 }}>
-                Un code a été envoyé à <strong>{landingEmail}</strong>.<br/>Saisis-le pour valider ton inscription.
+                Un code a été envoyé à <strong>{landingEmail}</strong>.<br/>Saisis-le pour valider ton inscription.<br/>
+                <span style={{ color: '#F59E0B', fontWeight: 600 }}>📬 Si tu ne le reçois pas, vérifie tes spams.</span>
               </div>
               {landingErr && <div style={{ color: '#EF4444', fontSize: 12, marginBottom: 8 }}>{landingErr}</div>}
               <input value={landingOtp} onChange={e => setLandingOtp(e.target.value.replace(/\D/g,'').slice(0,6))}
