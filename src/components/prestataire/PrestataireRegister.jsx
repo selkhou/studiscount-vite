@@ -279,7 +279,7 @@ export default function PrestataireRegister({ onSuccess, onBack }) {
             const { data: siretExist } = await db().from('prestataires').select('id').eq('siret', form.siret).limit(1)
             if (siretExist && siretExist.length > 0) return setError('Ce SIRET est déjà enregistré')
             // Vérification API si paramètre activé
-            if (window.SIOK_PARAMS?.validation_siret_active === 'true' && form.siret !== '00000000000000') {
+            if ((window.SIOK_PARAMS?.validation_siret_active === 'true' || window.SIOK_PARAMS?.validation_siret_active === true) && form.siret !== '00000000000000') {
               setSaving(true)
               setError('')
               let siretValide = false
