@@ -60,11 +60,14 @@ export default function PrestataireRegister({ onSuccess, onBack }) {
     try {
       const { data: authData, error: authErr } = await db().auth.signUp({
         email: form.email, password: form.password,
-        options: { emailRedirectTo: window.location.href }
+        options: { emailRedirectTo: window.location.origin }
       })
       if (authErr) throw authErr
       const authId = authData.user?.id
       if (!authId) throw new Error('Erreur création compte')
+      if (authData.user?.identities?.length === 0) {
+        throw new Error('Un compte existe déjà avec cet email. Connectez-vous ou utilisez "Mot de passe oublié".')
+      }
 
       // Ne pas insérer en base avant validation OTP
       setOtpData({ email: form.email, user: authData.user, authId, form: { ...form } })
@@ -203,7 +206,7 @@ export default function PrestataireRegister({ onSuccess, onBack }) {
 
         <div style={{ marginBottom: 14 }}>
           <div style={{ color: C.sub, fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 5 }}>
-            SIRET * <span style={{ color: '#ef4444' }}>*</span>
+            SIRET <span style={{ color: '#ef4444', marginLeft: 3 }}>*</span>
           </div>
           <input type="text" value={form.siret || ''} onChange={e => F('siret', e.target.value.replace(/\D/g, '').slice(0, 14))}
             placeholder="00000000000000"
@@ -278,21 +281,27 @@ export default function PrestataireRegister({ onSuccess, onBack }) {
             // Vérification API si paramètre activé
             if (window.SIOK_PARAMS?.validation_siret_active === 'true' && form.siret !== '00000000000000') {
               setSaving(true)
+              setError('')
+              let siretValide = false
               try {
                 const res = await fetch(`https://recherche-entreprises.api.gouv.fr/search?q=${form.siret}&page=1&per_page=1`)
                 const data = await res.json()
-                if (!data.results || data.results.length === 0) {
-                  setSaving(false)
-                  return setError('SIRET introuvable — vérifiez le numéro ou entrez 00000000000000')
+                if (data.results && data.results.length > 0) {
+                  siretValide = true
+                  F('nom_entreprise_api', data.results[0].nom_raison_sociale || data.results[0].nom_complet)
                 }
-                const entreprise = data.results[0]
-                F('nom_entreprise_api', entreprise.nom_raison_sociale || entreprise.nom_complet)
               } catch (e) {
-                // API indisponible — on continue quand même
+                // API indisponible — on laisse passer
+                siretValide = true
               }
               setSaving(false)
+              if (!siretValide) {
+                setError('SIRET introuvable — vérifiez le numéro ou entrez 00000000000000')
+                return
+              }
             }
-            setError(''); setStep(3)
+            setError('')
+            setStep(3)
           }}>Étape suivante →</Btn>
         </div>
       </div>
