@@ -18,8 +18,8 @@ export default function PrestataireRegister({ onSuccess, onBack }) {
   const [otpLoading, setOtpLoading] = useState(false)
   const [otpError, setOtpError] = useState('')
   const [otpResent, setOtpResent] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const [form, setForm] = useState({
-    email: '', password: '', nom_responsable: '', telephone: '',
     nom: '', type_metier: 'restaurant', siret: '',
     adresse: '', ville: 'annecy', lat: null, lng: null,
     plan: 'trial', cgu: false, showCGU: false,
@@ -125,6 +125,7 @@ export default function PrestataireRegister({ onSuccess, onBack }) {
         lat: f.lat || null, lng: f.lng || null,
         plan: f.plan, plan_debut: debut.toISOString(),
         plan_fin: fin?.toISOString() || null,
+        statut: 'en_attente',
       })
       if (dbErr) { setOtpError(dbErr.message); setOtpLoading(false); return }
 
@@ -178,7 +179,20 @@ export default function PrestataireRegister({ onSuccess, onBack }) {
         <div style={{ color: C.text, fontSize: 20, fontWeight: 800, marginBottom: 4 }}>Créer mon compte</div>
         <div style={{ color: C.muted, fontSize: 13, marginBottom: 20 }}>Étape 1 / 3 — Informations de connexion</div>
         {inp('Email *', 'email', 'votre@email.com', 'email', true)}
-        {inp('Mot de passe *', 'password', 'Min. 8 caractères', 'password', true)}
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ color: C.sub, fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 5 }}>
+            Mot de passe *<span style={{ color: '#ef4444', marginLeft: 3 }}>*</span>
+          </div>
+          <div style={{ position: 'relative' }}>
+            <input type={showPassword ? 'text' : 'password'} value={form.password || ''}
+              onChange={e => F('password', e.target.value)} placeholder="Min. 8 caractères"
+              style={{ width: '100%', background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '12px 40px 12px 14px', color: C.text, fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
+            <button type="button" onClick={() => setShowPassword(v => !v)}
+              style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: '#9CA3AF' }}>
+              {showPassword ? '🙈' : '👁️'}
+            </button>
+          </div>
+        </div>
         {inp('Nom du responsable *', 'nom_responsable', 'Jean Dupont', 'text', true)}
         {inp('Téléphone *', 'telephone', '+33450...', 'tel', true)}
         {error && <div style={{ background: 'rgba(239,68,68,0.1)', borderRadius: 8, padding: '10px 12px', marginBottom: 14, color: '#ef4444', fontSize: 13 }}>⚠️ {error}</div>}

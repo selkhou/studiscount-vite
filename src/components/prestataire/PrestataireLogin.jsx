@@ -17,6 +17,8 @@ export default function PrestataireLogin({ onSuccess, onBack }) {
   const [resetLoading, setResetLoading] = useState(false)
   const [resetError, setResetError] = useState('')
 
+  const [enseignes, setEnseignes] = useState([])
+
   const login = async () => {
     setError(''); setLoading(true)
     try {
@@ -24,9 +26,48 @@ export default function PrestataireLogin({ onSuccess, onBack }) {
         email: form.email, password: form.password
       })
       if (err) throw err
-      onSuccess(data.user)
-    } catch (e) { setError(e.message) }
-    setLoading(false)
+
+      // Charger toutes les enseignes de cet email
+      const { data: prests } = await db().from('prestataires')
+        .select('id, nom, siret, statut')
+        .eq('email', form.email.trim().toLowerCase())
+
+      if (!prests || prests.length === 0) {
+        setError('Aucun compte prestataire trouvé pour cet email')
+        await db().auth.signOut()
+        setLoading(false)
+        return
+      }
+
+      // Vérifier si toutes les enseignes sont en attente ou suspendues
+      const actives = prests.filter(p => p.statut === 'actif')
+      const enAttente = prests.filter(p => p.statut === 'en_attente')
+
+      if (actives.length === 0 && enAttente.length > 0) {
+        setError('Votre compte est en cours de validation. Vous serez contacté(e) sous 24h.')
+        await db().auth.signOut()
+        setLoading(false)
+        return
+      }
+
+      if (actives.length === 0) {
+        setError('Votre compte a été suspendu. Contactez-nous à contact@studiscount.fr')
+        await db().auth.signOut()
+        setLoading(false)
+        return
+      }
+
+      // Si une seule enseigne active → connexion directe
+      if (actives.length === 1) {
+        onSuccess(data.user, actives[0])
+        setLoading(false)
+        return
+      }
+
+      // Plusieurs enseignes actives → afficher le choix
+      setEnseignes(actives)
+      setLoading(false)
+    } catch (e) { setError(e.message); setLoading(false) }
   }
 
   const sendReset = async () => {
@@ -43,6 +84,33 @@ export default function PrestataireLogin({ onSuccess, onBack }) {
     } catch (e) { setResetError(e.message) }
     setResetLoading(false)
   }
+
+  if (enseignes.length > 1) return (
+    <PrestPageShell onBack={() => { setEnseignes([]); db().auth.signOut() }} backLabel="Retour">
+      <div style={{ padding: '32px 20px' }}>
+        <div style={{ fontSize: 40, marginBottom: 12, textAlign: 'center' }}>🏪</div>
+        <div style={{ color: C.text, fontSize: 20, fontWeight: 800, marginBottom: 4, textAlign: 'center' }}>
+          Choisissez votre enseigne
+        </div>
+        <div style={{ color: C.muted, fontSize: 13, marginBottom: 24, textAlign: 'center' }}>
+          Plusieurs enseignes sont associées à votre compte
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {enseignes.map(e => (
+            <button key={e.id} onClick={() => onSuccess(null, e)} style={{
+              padding: '16px 20px', borderRadius: 14,
+              border: `1.5px solid ${C.border}`,
+              background: C.card, textAlign: 'left',
+              cursor: 'pointer', fontFamily: 'inherit'
+            }}>
+              <div style={{ color: C.text, fontWeight: 700, fontSize: 15, marginBottom: 4 }}>{e.nom}</div>
+              <div style={{ color: C.muted, fontSize: 12 }}>SIRET : {e.siret || 'Non renseigné'}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </PrestPageShell>
+  )
 
   if (subScreen === 'register') return (
     <PrestataireRegister onSuccess={onSuccess} onBack={() => setSubScreen('login')} />
