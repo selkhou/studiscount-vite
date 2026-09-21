@@ -146,7 +146,8 @@ export default function PrestataireRegister({ onSuccess, onBack }) {
           <div style={{ color: C.text, fontSize: 20, fontWeight: 800, marginBottom: 4 }}>Vérifie ton email</div>
           <div style={{ color: C.muted, fontSize: 13, lineHeight: 1.6 }}>
             Un code de vérification a été envoyé à<br />
-            <span style={{ color: '#0066FF', fontWeight: 700 }}>{otpData.email}</span>
+            <span style={{ color: '#0066FF', fontWeight: 700, fontSize: 15 }}>{otpData.email}</span><br/>
+            <span style={{ color: '#F59E0B', fontWeight: 600, fontSize: 12 }}>📬 Si vous ne le recevez pas, vérifiez vos spams.</span>
           </div>
         </div>
         <div style={{ marginBottom: 14 }}>
@@ -175,12 +176,17 @@ export default function PrestataireRegister({ onSuccess, onBack }) {
         <div style={{ color: C.muted, fontSize: 13, marginBottom: 20 }}>Étape 1 / 3 — Informations de connexion</div>
         {inp('Email *', 'email', 'votre@email.com', 'email', true)}
         {inp('Mot de passe *', 'password', 'Min. 8 caractères', 'password', true)}
-        {inp('Nom du responsable', 'nom_responsable', 'Jean Dupont')}
-        {inp('Téléphone', 'telephone', '+33450...')}
+        {inp('Nom du responsable *', 'nom_responsable', 'Jean Dupont', 'text', true)}
+        {inp('Téléphone *', 'telephone', '+33450...', 'tel', true)}
         {error && <div style={{ background: 'rgba(239,68,68,0.1)', borderRadius: 8, padding: '10px 12px', marginBottom: 14, color: '#ef4444', fontSize: 13 }}>⚠️ {error}</div>}
-        <Btn onClick={() => {
+        <Btn onClick={async () => {
           if (!form.email || !form.password) return setError('Email et mot de passe obligatoires')
           if (form.password.length < 8) return setError('Mot de passe : 8 caractères minimum')
+          if (!form.nom_responsable.trim()) return setError('Le nom du responsable est obligatoire')
+          if (!form.telephone.trim()) return setError('Le téléphone est obligatoire')
+          // Vérifier si email déjà utilisé dans prestataires
+          const { data: existing } = await db().from('prestataires').select('id').eq('email', form.email.trim().toLowerCase()).limit(1)
+          if (existing && existing.length > 0) return setError('Un compte prestataire existe déjà avec cet email. Connectez-vous ou utilisez un autre email.')
           setError(''); setStep(2)
         }}>Étape suivante →</Btn>
       </div>
@@ -194,7 +200,16 @@ export default function PrestataireRegister({ onSuccess, onBack }) {
         <div style={{ color: C.text, fontSize: 20, fontWeight: 800, marginBottom: 4 }}>Votre enseigne</div>
         <div style={{ color: C.muted, fontSize: 13, marginBottom: 20 }}>Étape 2 / 3 — Informations de votre établissement</div>
         {inp("Nom de l'enseigne *", 'nom', 'Ex: Danzo Barber…', 'text', true)}
-        {inp('SIRET', 'siret', '14 chiffres')}
+
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ color: C.sub, fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 5 }}>
+            SIRET * <span style={{ color: '#ef4444' }}>*</span>
+          </div>
+          <input type="text" value={form.siret || ''} onChange={e => F('siret', e.target.value.replace(/\D/g, '').slice(0, 14))}
+            placeholder="00000000000000"
+            style={{ width: '100%', background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '12px 14px', color: C.text, fontSize: 14, fontFamily: 'inherit', outline: 'none', letterSpacing: 2 }} />
+          <div style={{ color: C.muted, fontSize: 11, marginTop: 4 }}>14 chiffres — entrez 00000000000000 si non disponible</div>
+        </div>
 
         <div style={{ marginBottom: 14 }}>
           <div style={{ color: C.sub, fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Type de métier *</div>
@@ -254,8 +269,29 @@ export default function PrestataireRegister({ onSuccess, onBack }) {
 
         <div style={{ marginTop: 14 }}>
           {error && <div style={{ background: 'rgba(239,68,68,0.1)', borderRadius: 8, padding: '10px 12px', marginBottom: 14, color: '#ef4444', fontSize: 13 }}>⚠️ {error}</div>}
-          <Btn onClick={() => {
+          <Btn onClick={async () => {
             if (!form.nom) return setError("Le nom de l'enseigne est obligatoire")
+            if (!form.siret || form.siret.length !== 14) return setError('Le SIRET doit contenir 14 chiffres')
+            // Vérifier doublon SIRET
+            const { data: siretExist } = await db().from('prestataires').select('id').eq('siret', form.siret).limit(1)
+            if (siretExist && siretExist.length > 0) return setError('Ce SIRET est déjà enregistré')
+            // Vérification API si paramètre activé
+            if (window.SIOK_PARAMS?.validation_siret_active === 'true' && form.siret !== '00000000000000') {
+              setSaving(true)
+              try {
+                const res = await fetch(`https://recherche-entreprises.api.gouv.fr/search?q=${form.siret}&page=1&per_page=1`)
+                const data = await res.json()
+                if (!data.results || data.results.length === 0) {
+                  setSaving(false)
+                  return setError('SIRET introuvable — vérifiez le numéro ou entrez 00000000000000')
+                }
+                const entreprise = data.results[0]
+                F('nom_entreprise_api', entreprise.nom_raison_sociale || entreprise.nom_complet)
+              } catch (e) {
+                // API indisponible — on continue quand même
+              }
+              setSaving(false)
+            }
             setError(''); setStep(3)
           }}>Étape suivante →</Btn>
         </div>
