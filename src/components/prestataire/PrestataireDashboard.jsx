@@ -236,6 +236,11 @@ export default function PrestataireDashboard({ user, enseigneInitiale, onLogout,
                 </div>
               </div>
               <div style={{ color: C.muted, fontSize: 12 }}>{type.label} · {active.ville}</div>
+              {onChangerEnseigne && (
+                <button onClick={onChangerEnseigne} style={{ marginTop: 4, background: 'none', border: 'none', color: '#0066FF', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>
+                  🔄 Changer d'enseigne
+                </button>
+              )}
             </div>
             <BoutonSuggestion nom={active.nom} type="prestataire" />
 
