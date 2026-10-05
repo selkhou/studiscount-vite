@@ -46,7 +46,7 @@ export default function ModalCGU({ onClose, defaultTab = 'etudiant', hidePresta 
         style={{
           background: 'white', borderRadius: '24px 24px 0 0',
           width: '100%', maxWidth: 480,
-          maxHeight: '85vh', display: 'flex', flexDirection: 'column',
+          Height: '85vh', display: 'flex', flexDirection: 'column',
 		  overflow: 'hidden'
         }}>
 
