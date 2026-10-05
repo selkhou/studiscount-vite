@@ -97,6 +97,8 @@ WebkitOverflowScrolling: 'touch'		}}>
         </div>
 
         {/* Footer */}
+		//
+		//
         <div style={{
           background: 'white',
           padding: '16px 20px',
