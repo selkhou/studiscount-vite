@@ -46,8 +46,7 @@ export default function ModalCGU({ onClose, defaultTab = 'etudiant', hidePresta 
         style={{
           background: 'white', borderRadius: '24px 24px 0 0',
           width: '100%', maxWidth: 480,
-          maxHeight: '85vh', display: 'flex', flexDirection: 'column',
-		  overflow: 'hidden'
+          maxHeight: '85vh', display: 'flex', flexDirection: 'column'
         }}>
 
         {/* Header */}
@@ -85,8 +84,7 @@ export default function ModalCGU({ onClose, defaultTab = 'etudiant', hidePresta 
         </div>
 
         {/* Contenu */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px',
-WebkitOverflowScrolling: 'touch'		}}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
           <div style={{
             fontSize: 13, color: CS.text, lineHeight: 1.8,
             whiteSpace: 'pre-line'
