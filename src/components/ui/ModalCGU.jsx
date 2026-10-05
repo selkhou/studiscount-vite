@@ -5,7 +5,7 @@ import StudentBtn from './StudentBtn.jsx'
 const CGU_ETUDIANT = `
 **Conditions d'utilisation — Étudiant**
 
-1. L'application StuDiscount est réservée aux étudiants munis d'une carte étudiant valide.
+1. L'application StuDiscount est réservée aux étudiants,lycéens,collégiens munis d'une carte étudiant valide.
 
 2. Les offres sont proposées par des commerçants partenaires et peuvent être modifiées ou retirées à tout moment.
 
@@ -14,6 +14,8 @@ const CGU_ETUDIANT = `
 4. Les points accumulés sont valables 12 mois et ne sont pas convertibles en argent.
 
 5. StuDiscount se réserve le droit de suspendre tout compte en cas d'abus.
+
+6. La disponibilité des bons cadeaux peut varier suivant leur disponibilité.
 `
 
 const CGU_PRESTATAIRE = `
@@ -92,9 +94,16 @@ export default function ModalCGU({ onClose, defaultTab = 'etudiant', hidePresta 
         </div>
 
         {/* Footer */}
-        <div style={{ padding: '16px 20px 32px', flexShrink: 0 }}>
-          <StudentBtn onClick={onClose}>J'ai compris</StudentBtn>
-        </div>
+        // <div style={{ padding: '16px 20px 32px', flexShrink: 0 }}>
+        //  <StudentBtn onClick={onClose}>J'ai compris</StudentBtn>
+        // </div>
+		<div style={{
+  padding: '16px 20px calc(env(safe-area-inset-bottom) + 20px)',
+  flexShrink: 0,
+  background: 'white'
+}}>
+  <StudentBtn onClick={onClose}>J'ai compris</StudentBtn>
+</div>
       </div>
     </div>
   )
