@@ -59,7 +59,7 @@ export default function PrestataireLogin({ onSuccess, onBack }) {
 
       // Si une seule enseigne active → connexion directe
       if (actives.length === 1) {
-        onSuccess(data.user, actives[0])
+        onSuccess(data.user, actives[0], actives)
         setLoading(false)
         return
       }
@@ -97,7 +97,7 @@ export default function PrestataireLogin({ onSuccess, onBack }) {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {enseignes.map(e => (
-            <button key={e.id} onClick={() => onSuccess(null, e)} style={{
+            <button key={e.id} onClick={() => onSuccess(null, e, enseignes)} style={{
               padding: '16px 20px', borderRadius: 14,
               border: `1.5px solid ${C.border}`,
               background: C.card, textAlign: 'left',

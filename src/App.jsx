@@ -21,6 +21,7 @@ export default function App() {
   const [screen, setScreen] = useState(savedEt ? savedScreen : 'explorer')
   const [user, setUser] = useState(null)
   const [prestataire, setPrestataire] = useState(null)
+  const [enseignes, setEnseignes] = useState([])
   const [etudiant, setEtudiant] = useState(savedEt)
   const [resetMode, setResetMode] = useState(false)
 
@@ -139,9 +140,41 @@ export default function App() {
 
   if (screen === 'prestataire-login') return (
     <PrestataireLogin
-      onSuccess={(u, enseigne) => { setUser(u); setPrestataire(enseigne || null); setScreen('prestataire-dashboard') }}
+      onSuccess={(u, enseigne, listeEnseignes) => {
+        setUser(u)
+        setPrestataire(enseigne || null)
+        setEnseignes(listeEnseignes || [])
+        setScreen('prestataire-dashboard')
+      }}
       onBack={() => setScreenPersist('explorer')}
     />
+  )
+
+  if (screen === 'prestataire-select') return (
+    <div style={{ minHeight: '100vh', background: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <div style={{ background: '#fff', borderRadius: 20, padding: '32px 24px', width: '100%', maxWidth: 380 }}>
+        <div style={{ fontSize: 40, textAlign: 'center', marginBottom: 12 }}>🏪</div>
+        <div style={{ fontSize: 20, fontWeight: 800, color: '#0d1a3a', textAlign: 'center', marginBottom: 4 }}>Choisissez votre enseigne</div>
+        <div style={{ fontSize: 13, color: '#6B7280', textAlign: 'center', marginBottom: 24 }}>Plusieurs enseignes sont associées à votre compte</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {enseignes.map(e => (
+            <button key={e.id} onClick={() => { setPrestataire(e); setScreen('prestataire-dashboard') }} style={{
+              padding: '16px 20px', borderRadius: 14,
+              border: '1.5px solid #E5E7EB',
+              background: '#fff', textAlign: 'left',
+              cursor: 'pointer', fontFamily: 'inherit'
+            }}>
+              <div style={{ color: '#0d1a3a', fontWeight: 700, fontSize: 15, marginBottom: 4 }}>{e.nom}</div>
+              <div style={{ color: '#6B7280', fontSize: 12 }}>SIRET : {e.siret || 'Non renseigné'}</div>
+            </button>
+          ))}
+        </div>
+        <button onClick={async () => { await db().auth.signOut(); setUser(null); setPrestataire(null); setEnseignes([]); setScreenPersist('explorer') }}
+          style={{ marginTop: 20, width: '100%', padding: '12px', borderRadius: 12, border: 'none', background: 'rgba(239,68,68,0.08)', color: '#EF4444', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+          Se déconnecter
+        </button>
+      </div>
+    </div>
   )
 
   if (screen === 'prestataire-dashboard') return (
@@ -152,13 +185,11 @@ export default function App() {
         await db().auth.signOut()
         setUser(null)
         setPrestataire(null)
+        setEnseignes([])
         setScreenPersist('explorer')
       }}
       onHome={() => setScreenPersist('explorer')}
-      onChangerEnseigne={() => {
-        setPrestataire(null)
-        setScreen('prestataire-login')
-      }}
+      onChangerEnseigne={enseignes.length > 1 ? () => setScreen('prestataire-select') : null}
     />
   )
 
