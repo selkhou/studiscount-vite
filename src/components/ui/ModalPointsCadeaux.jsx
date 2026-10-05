@@ -55,9 +55,9 @@ export default function ModalPointsCadeaux({ onClose, onConnecte }) {
                 <div style={{ color: '#1F1F1F', fontWeight: 800, fontSize: 15, marginBottom: 8 }}>🎁 Tes avantages</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {[
-                    { pts: `${window.SIOK_PARAMS?.palier_1_points || 250} pts`, reward: `Bon cadeau partenaire ${window.SIOK_PARAMS?.palier_1_valeur || 10}€ 🎁`, color: '#F97316' },
-                    { pts: `${window.SIOK_PARAMS?.palier_2_points || 500} pts`, reward: `Bon cadeau partenaire ${window.SIOK_PARAMS?.palier_2_valeur || 40}€ 🎁`, color: '#EF4444' },
-                    { pts: `${window.SIOK_PARAMS?.palier_3_points || 750} pts`, reward: `Bon cadeau partenaire ${window.SIOK_PARAMS?.palier_3_valeur || 70}€ 🎁`, color: '#8B5CF6' },
+                    { pts: `${window.SIOK_PARAMS?.palier_1_points || 150} pts`, reward: `Bon cadeau partenaire ${window.SIOK_PARAMS?.palier_1_valeur || 15}€ 🎁`, color: '#F97316' },
+                    { pts: `${window.SIOK_PARAMS?.palier_2_points || 250} pts`, reward: `Bon cadeau partenaire ${window.SIOK_PARAMS?.palier_2_valeur || 30}€ 🎁`, color: '#EF4444' },
+                    { pts: `${window.SIOK_PARAMS?.palier_3_points || 400} pts`, reward: `Bon cadeau partenaire ${window.SIOK_PARAMS?.palier_3_valeur || 60}€ 🎁`, color: '#8B5CF6' },
                   ].map(r => (
                     <div key={r.pts} style={{ background: 'white', borderRadius: 10, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
                       <span style={{ color: '#374151', fontSize: 13 }}>{r.reward}</span>
@@ -94,7 +94,10 @@ export default function ModalPointsCadeaux({ onClose, onConnecte }) {
           {onglet === 'explication' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {[
-                { icon: '📅', title: 'Limite quotidienne', desc: 'Tu peux gagner au maximum 5 points par jour et 150 points par mois.' },
+                //{ icon: '📅', title: 'Limite quotidienne', desc: 'Tu peux gagner au maximum 5 points par jour et 150 points par mois.' },
+				{ icon: '📅', title: 'Limite quotidienne', 
+  desc: `Tu peux gagner au maximum ${window.SIOK_PARAMS?.points_max_jour || 5} points par jour et ${window.SIOK_PARAMS?.points_max_mois || 150} points par mois.` 
+},
                 { icon: '🎫', title: 'Utiliser tes avantages', desc: 'Génère ton bon cadeau depuis ton profil et récupère-le chez nos partenaires.' },
                 { icon: '🔄', title: 'Déduction des points', desc: 'Les points utilisés sont automatiquement déduits. Ton solde se met à jour en temps réel.' },
                 { icon: '👤', title: 'Compte obligatoire', desc: 'Crée ton compte gratuitement pour commencer à accumuler tes points.' },
