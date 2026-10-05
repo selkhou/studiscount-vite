@@ -98,15 +98,14 @@ WebkitOverflowScrolling: 'touch'		}}>
 
         {/* Footer */}
         <div style={{
-  position: 'sticky',
-  bottom: 0,
-  background: 'white',
-  padding: '16px 20px calc(env(safe-area-inset-bottom) + 20px)',
-  borderTop: '1px solid #F0F0F0',
-  flexShrink: 0
-}}>
-  <StudentBtn onClick={onClose}>J'ai compris</StudentBtn>
-</div>
+          background: 'white',
+          padding: '16px 20px',
+          borderTop: '1px solid #F0F0F0',
+          flexShrink: 0,
+          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)'
+        }}>
+          <StudentBtn onClick={onClose}>J'ai compris</StudentBtn>
+        </div>
       </div>
     </div>
   )
