@@ -2,10 +2,28 @@ import { useState, useEffect } from 'react'
 import { CS } from '../../constants.js'
 import { db } from '../../lib/supabase.js'
 
+// const SEUILS = [
+//  { pts: 250, montant: 10, label: 'Bon cadeau 10€' },
+ // { pts: 500, montant: 40, label: 'Bon cadeau 40€' },
+ // { pts: 750, montant: 70, label: 'Bon cadeau 70€' },
+// ]
+// --- PALIERS DYNAMIQUES ---
 const SEUILS = [
-  { pts: 250, montant: 10, label: 'Bon cadeau 10€' },
-  { pts: 500, montant: 40, label: 'Bon cadeau 40€' },
-  { pts: 750, montant: 70, label: 'Bon cadeau 70€' },
+  {
+    pts: window.SIOK_PARAMS?.palier_1_points || 150,
+    montant: window.SIOK_PARAMS?.palier_1_valeur || 15,
+    label: `Bon cadeau ${window.SIOK_PARAMS?.palier_1_valeur || 15}€`
+  },
+  {
+    pts: window.SIOK_PARAMS?.palier_2_points || 250,
+    montant: window.SIOK_PARAMS?.palier_2_valeur || 30,
+    label: `Bon cadeau ${window.SIOK_PARAMS?.palier_2_valeur || 30}€`
+  },
+  {
+    pts: window.SIOK_PARAMS?.palier_3_points || 400,
+    montant: window.SIOK_PARAMS?.palier_3_valeur || 60,
+    label: `Bon cadeau ${window.SIOK_PARAMS?.palier_3_valeur || 60}€`
+  }
 ]
 
 export default function MesCadeaux({ etudiant, totalPoints, onPointsUpdate }) {
