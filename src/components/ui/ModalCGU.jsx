@@ -15,8 +15,7 @@ const CGU_ETUDIANT = `
 
 5. StuDiscount se réserve le droit de suspendre tout compte en cas d'abus.
 
-6. La disponibilité des bons cadeaux peut varier suivant leur disponibilité.
-`
+6. La disponibilité des bons cadeaux peut varier suivant leur disponibilité.`
 
 const CGU_PRESTATAIRE = `
 **Conditions d'utilisation — Prestataire**
@@ -97,14 +96,11 @@ WebkitOverflowScrolling: 'touch'		}}>
         </div>
 
         {/* Footer */}
-		//
-		//
         <div style={{
           background: 'white',
-          padding: '16px 20px',
+          padding: '16px 20px 80px',
           borderTop: '1px solid #F0F0F0',
-          flexShrink: 0,
-          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)'
+          flexShrink: 0
         }}>
           <StudentBtn onClick={onClose}>J'ai compris</StudentBtn>
         </div>
