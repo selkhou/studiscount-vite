@@ -94,10 +94,13 @@ export default function ModalCGU({ onClose, defaultTab = 'etudiant', hidePresta 
         </div>
 
         {/* Footer */}
-        		<div style={{
+        <div style={{
+  position: 'sticky',
+  bottom: 0,
+  background: 'white',
   padding: '16px 20px calc(env(safe-area-inset-bottom) + 20px)',
-  flexShrink: 0,
-  background: 'white'
+  borderTop: '1px solid #F0F0F0',
+  flexShrink: 0
 }}>
   <StudentBtn onClick={onClose}>J'ai compris</StudentBtn>
 </div>
