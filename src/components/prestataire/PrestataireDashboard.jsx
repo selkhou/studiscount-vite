@@ -20,7 +20,7 @@ import FacturePrestataire from './FacturePrestataire.jsx'
 import ConseilIA from './ConseilIA.jsx' // conservé pour usage futur
 import BoutonSuggestion from '../ui/BoutonSuggestion.jsx'
 
-export default function PrestataireDashboard({ user, enseigneInitiale, onLogout, onHome }) {
+export default function PrestataireDashboard({ user, enseigneInitiale, onLogout, onHome, onChangerEnseigne }) {
   const C = getC()
   const [active, setActive] = useState(enseigneInitiale || null)
   const [offres, setOffres] = useState([])
@@ -147,9 +147,16 @@ export default function PrestataireDashboard({ user, enseigneInitiale, onLogout,
           Votre compte a été suspendu.
           {active.motif_suspension && <><br />Motif : <strong style={{ color: C.text }}>{active.motif_suspension}</strong></>}
         </div>
-        <button onClick={onLogout} style={{ padding: '10px 20px', borderRadius: 12, border: 'none', background: 'rgba(239,68,68,0.1)', color: '#EF4444', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-          Se déconnecter
-        </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {onChangerEnseigne && (
+            <button onClick={onChangerEnseigne} style={{ padding: '10px 20px', borderRadius: 12, border: 'none', background: 'rgba(0,102,255,0.1)', color: '#0066FF', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+              🏪 Changer d'enseigne
+            </button>
+          )}
+          <button onClick={onLogout} style={{ padding: '10px 20px', borderRadius: 12, border: 'none', background: 'rgba(239,68,68,0.1)', color: '#EF4444', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+            Se déconnecter
+          </button>
+        </div>
       </div>
     </div>
   )

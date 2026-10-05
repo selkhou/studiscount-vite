@@ -148,8 +148,17 @@ export default function App() {
     <PrestataireDashboard
       user={user}
       enseigneInitiale={prestataire}
-      onLogout={() => { setUser(null); setPrestataire(null); setScreenPersist('explorer') }}
+      onLogout={async () => {
+        await db().auth.signOut()
+        setUser(null)
+        setPrestataire(null)
+        setScreenPersist('explorer')
+      }}
       onHome={() => setScreenPersist('explorer')}
+      onChangerEnseigne={() => {
+        setPrestataire(null)
+        setScreen('prestataire-login')
+      }}
     />
   )
 
