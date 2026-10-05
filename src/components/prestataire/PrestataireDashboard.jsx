@@ -20,9 +20,9 @@ import FacturePrestataire from './FacturePrestataire.jsx'
 import ConseilIA from './ConseilIA.jsx' // conservé pour usage futur
 import BoutonSuggestion from '../ui/BoutonSuggestion.jsx'
 
-export default function PrestataireDashboard({ user, onLogout, onHome }) {
+export default function PrestataireDashboard({ user, enseigneInitiale, onLogout, onHome }) {
   const C = getC()
-  const [active, setActive] = useState(null)
+  const [active, setActive] = useState(enseigneInitiale || null)
   const [offres, setOffres] = useState([])
   const [visites, setVisites] = useState([])
   const [vuesMap, setVuesMap] = useState({})
@@ -61,12 +61,24 @@ export default function PrestataireDashboard({ user, onLogout, onHome }) {
   const loadPrestataires = async () => {
     setLoading(true)
     try {
-      const { data } = await db().from('prestataires').select('*').eq('auth_id', user.id)
-      if (data && data.length > 0) {
-        setActive(data[0])
-        await loadOffres(data[0].id)
-        await loadVisitesPrest(data[0].id)
-        await loadVues(data[0].id)
+      // Si l'enseigne est déjà connue (sélectionnée à la connexion), on l'utilise directement
+      if (enseigneInitiale?.id) {
+        // Recharger les détails complets de cette enseigne
+        const { data: fullData } = await db().from('prestataires').select('*').eq('id', enseigneInitiale.id).single()
+        const presta = fullData || enseigneInitiale
+        setActive(presta)
+        await loadOffres(presta.id)
+        await loadVisitesPrest(presta.id)
+        await loadVues(presta.id)
+      } else {
+        // Sinon charger par auth_id (1 seule enseigne ou pas de sélection)
+        const { data } = await db().from('prestataires').select('*').eq('auth_id', user.id)
+        if (data && data.length > 0) {
+          setActive(data[0])
+          await loadOffres(data[0].id)
+          await loadVisitesPrest(data[0].id)
+          await loadVues(data[0].id)
+        }
       }
     } catch (e) { console.error(e) }
     setLoading(false)

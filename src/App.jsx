@@ -20,6 +20,7 @@ export default function App() {
 
   const [screen, setScreen] = useState(savedEt ? savedScreen : 'explorer')
   const [user, setUser] = useState(null)
+  const [prestataire, setPrestataire] = useState(null)
   const [etudiant, setEtudiant] = useState(savedEt)
   const [resetMode, setResetMode] = useState(false)
 
@@ -138,7 +139,7 @@ export default function App() {
 
   if (screen === 'prestataire-login') return (
     <PrestataireLogin
-      onSuccess={(u) => { setUser(u); setScreen('prestataire-dashboard') }}
+      onSuccess={(u, enseigne) => { setUser(u); setPrestataire(enseigne || null); setScreen('prestataire-dashboard') }}
       onBack={() => setScreenPersist('explorer')}
     />
   )
@@ -146,7 +147,8 @@ export default function App() {
   if (screen === 'prestataire-dashboard') return (
     <PrestataireDashboard
       user={user}
-      onLogout={() => { setUser(null); setScreenPersist('explorer') }}
+      enseigneInitiale={prestataire}
+      onLogout={() => { setUser(null); setPrestataire(null); setScreenPersist('explorer') }}
       onHome={() => setScreenPersist('explorer')}
     />
   )
