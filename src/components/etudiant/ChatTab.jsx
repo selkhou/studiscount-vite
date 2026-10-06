@@ -46,7 +46,7 @@ function ChatCGU({ etudiant, onAccept }) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '20px 16px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '20px 16px 80px' }}>
       <div style={{ fontSize: 28, textAlign: 'center', marginBottom: 8 }}>💬</div>
       <div style={{ fontSize: 18, fontWeight: 900, color: CS.text, textAlign: 'center', marginBottom: 4 }}>Chat StuDiscount</div>
       <div style={{ fontSize: 13, color: CS.muted, textAlign: 'center', marginBottom: 16 }}>Lis et accepte les conditions avant d'utiliser le chat</div>
