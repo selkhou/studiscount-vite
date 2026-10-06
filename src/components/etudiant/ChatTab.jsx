@@ -167,22 +167,51 @@ function GroupeMessages({ groupe, etudiant, onBack, onGroupeUpdated }) {
   }, [groupe.id])
 
   const loadMessages = async () => {
-    const { data } = await db().from('chat_messages')
-      .select('*, etudiants(prenom)')
+    // Récupérer la date d'entrée dans le groupe
+    const { data: membre } = await db().from('chat_membres')
+      .select('joined_at')
       .eq('groupe_id', groupe.id)
-      .gte('created_at', (await db().from('chat_membres').select('joined_at').eq('groupe_id', groupe.id).eq('etudiant_id', etudiant.id).single()).data?.joined_at || '2000-01-01')
+      .eq('etudiant_id', etudiant.id)
+      .maybeSingle()
+    const joinedAt = membre?.joined_at || '2000-01-01'
+
+    // Charger les messages depuis cette date
+    const { data: msgs } = await db().from('chat_messages')
+      .select('id, etudiant_id, contenu, created_at')
+      .eq('groupe_id', groupe.id)
+      .gte('created_at', joinedAt)
       .order('created_at', { ascending: true })
-    setMessages(data || [])
+
+    if (!msgs) { setMessages([]); setLoading(false); return }
+
+    // Charger les prénoms
+    const etudiantIds = [...new Set(msgs.map(m => m.etudiant_id))]
+    const { data: etudiantsData } = etudiantIds.length > 0
+      ? await db().from('etudiants').select('id, prenom').in('id', etudiantIds)
+      : { data: [] }
+
+    setMessages(msgs.map(m => ({
+      ...m,
+      etudiants: etudiantsData?.find(e => e.id === m.etudiant_id)
+    })))
     setLoading(false)
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
   }
 
   const loadMembres = async () => {
-    const { data } = await db().from('chat_membres')
-      .select('*, etudiants(prenom, email)')
+    const { data: membresData } = await db().from('chat_membres')
+      .select('id, etudiant_id, role, statut, invited_by, joined_at')
       .eq('groupe_id', groupe.id)
       .neq('statut', 'refuse')
-    setMembres(data || [])
+    if (!membresData) { setMembres([]); return }
+    const etudiantIds = membresData.map(m => m.etudiant_id).filter(Boolean)
+    const { data: etudiantsData } = etudiantIds.length > 0
+      ? await db().from('etudiants').select('id, prenom, email').in('id', etudiantIds)
+      : { data: [] }
+    setMembres(membresData.map(m => ({
+      ...m,
+      etudiants: etudiantsData?.find(e => e.id === m.etudiant_id)
+    })))
   }
 
   const envoyer = async () => {
@@ -393,19 +422,43 @@ export default function ChatTab({ etudiant }) {
 
   const loadData = async () => {
     setLoading(true)
-    // Groupes dont je suis membre actif
+    // Groupes dont je suis membre actif — charger séparément
     const { data: memberships } = await db().from('chat_membres')
-      .select('groupe_id, role, statut, chat_groupes(*)')
+      .select('groupe_id, role')
       .eq('etudiant_id', etudiant.id)
       .eq('statut', 'actif')
-    setGroupes((memberships || []).map(m => ({ ...m.chat_groupes, monRole: m.role })).filter(Boolean))
+
+    if (memberships && memberships.length > 0) {
+      const groupeIds = memberships.map(m => m.groupe_id)
+      const { data: groupesData } = await db().from('chat_groupes')
+        .select('*')
+        .in('id', groupeIds)
+      const rolesMap = {}
+      memberships.forEach(m => { rolesMap[m.groupe_id] = m.role })
+      setGroupes((groupesData || []).map(g => ({ ...g, monRole: rolesMap[g.id] })))
+    } else {
+      setGroupes([])
+    }
 
     // Invitations en attente
     const { data: invites } = await db().from('chat_membres')
-      .select('id, groupe_id, chat_groupes(nom, categorie), etudiants!chat_membres_invited_by_fkey(prenom)')
+      .select('id, groupe_id, invited_by')
       .eq('etudiant_id', etudiant.id)
       .eq('statut', 'invite')
-    setInvitations(invites || [])
+
+    if (invites && invites.length > 0) {
+      const invGroupeIds = invites.map(i => i.groupe_id)
+      const { data: invGroupes } = await db().from('chat_groupes').select('id, nom, categorie').in('id', invGroupeIds)
+      const inviterIds = invites.map(i => i.invited_by).filter(Boolean)
+      const { data: inviters } = inviterIds.length > 0 ? await db().from('etudiants').select('id, prenom').in('id', inviterIds) : { data: [] }
+      setInvitations(invites.map(i => ({
+        ...i,
+        chat_groupes: invGroupes?.find(g => g.id === i.groupe_id),
+        etudiants: inviters?.find(e => e.id === i.invited_by)
+      })))
+    } else {
+      setInvitations([])
+    }
     setLoading(false)
   }
 
