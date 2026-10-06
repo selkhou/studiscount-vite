@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import SondageBanniere from '../sondage/SondageBanniere.jsx'
 import { CS } from '../../constants.js'
+import ChatTab from './ChatTab.jsx'
 import { db } from '../../lib/supabase.js'
 import {
   isOffreVisible, distanceM, bannerGradient,
@@ -355,6 +356,7 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
   const [drillKpi, setDrillKpi] = useState(null)
   const { offres, loading } = useOffres(city, userLocation)
   const [showModal, setShowModal] = useState(false)
+  const [showChat, setShowChat] = useState(false)
   const [showMesBons, setShowMesBons] = useState(false)
   const [points, setPoints] = useState(() => {
     try {
@@ -875,13 +877,30 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
           <SIOKLogo size="sm" />
           <span style={{ fontSize: 9, color: blocked ? '#D1D5DB' : '#9CA3AF', marginTop: 1 }}>StuD</span>
         </button>
-        <button className="siok-bottom-btn" onClick={() => { setShowProfile(!showProfile); setProfileTab('Détails') }}>
+        <button className="siok-bottom-btn" onClick={() => { setShowChat(!showChat); setShowProfile(false) }}>
+          <span style={{ fontSize: 20 }}>💬</span>
+          <span style={{ color: showChat ? '#0066FF' : '#9CA3AF', fontSize: 10, fontWeight: 700 }}>Chat</span>
+        </button>
+        <button className="siok-bottom-btn" onClick={() => { setShowProfile(!showProfile); setShowChat(false); setProfileTab('Détails') }}>
           <IcoProfil active={true} />
           <span style={{ color: '#0066FF', fontSize: 10, fontWeight: 700, maxWidth: 60, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {etudiant?.prenom || 'Compte'}
           </span>
         </button>
       </div>
+
+      {/* Chat overlay */}
+      {showChat && (
+        <div style={{ position: 'fixed', inset: 0, background: '#F8F9FA', zIndex: 3000, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ background: 'white', padding: '12px 16px', borderBottom: `1px solid ${CS.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: CS.text }}>💬 Chat</div>
+            <button onClick={() => setShowChat(false)} style={{ background: '#F0F0F0', border: 'none', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer', fontSize: 16 }}>✕</button>
+          </div>
+          <div style={{ flex: 1, overflowY: 'auto' }}>
+            <ChatTab etudiant={etudiant} />
+          </div>
+        </div>
+      )}
       {showModal && (
         <ModalPointsCadeaux
           onClose={() => setShowModal(false)}
