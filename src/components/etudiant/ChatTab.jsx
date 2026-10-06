@@ -324,7 +324,7 @@ function GroupeMessages({ groupe, etudiant, onBack, onGroupeUpdated }) {
             <div ref={bottomRef} />
           </div>
           {groupe.statut !== 'inactif' ? (
-            <div style={{ padding: '12px 16px', borderTop: `1px solid ${CS.border}`, display: 'flex', gap: 8, alignItems: 'flex-end', flexShrink: 0, paddingBottom: 24 }}>
+            <div style={{ padding: '12px 16px 16px', borderTop: `1px solid ${CS.border}`, display: 'flex', gap: 8, alignItems: 'flex-end', flexShrink: 0, background: 'white' }}>
               <textarea value={texte} onChange={e => setTexte(e.target.value.slice(0, 200))}
                 placeholder="Écris un message..." rows={1} maxLength={200}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); envoyer() } }}

@@ -891,12 +891,12 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
 
       {/* Chat overlay */}
       {showChat && (
-        <div style={{ position: 'fixed', inset: 0, background: '#F8F9FA', zIndex: 3000, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: '#F8F9FA', zIndex: 3200, display: 'flex', flexDirection: 'column' }}>
           <div style={{ background: 'white', padding: '12px 16px', borderBottom: `1px solid ${CS.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
             <div style={{ fontSize: 16, fontWeight: 800, color: CS.text }}>💬 Chat</div>
             <button onClick={() => setShowChat(false)} style={{ background: '#F0F0F0', border: 'none', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer', fontSize: 16 }}>✕</button>
           </div>
-          <div style={{ flex: 1, overflowY: 'auto' }}>
+          <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
             <ChatTab etudiant={etudiant} />
           </div>
         </div>
