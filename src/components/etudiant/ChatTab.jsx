@@ -163,12 +163,16 @@ function GroupeMessages({ groupe, etudiant, onBack, onGroupeUpdated }) {
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteMsg, setInviteMsg] = useState('')
   const [inviteLoading, setInviteLoading] = useState(false)
+  const [filtreMsg, setFiltreMsg] = useState('')
+  const [filtres, setFiltres] = useState([])
+  const [dernierEnvoi, setDernierEnvoi] = useState(0)
   const bottomRef = useRef(null)
   const isAdmin = groupe.admin_id === etudiant.id
 
   useEffect(() => {
     loadMessages()
     loadMembres()
+    loadFiltres()
     // Realtime subscription
     const channel = db().channel(`chat_${groupe.id}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `groupe_id=eq.${groupe.id}` },
@@ -228,9 +232,62 @@ function GroupeMessages({ groupe, etudiant, onBack, onGroupeUpdated }) {
     })))
   }
 
+  const loadFiltres = async () => {
+    const { data } = await db().from('chat_filtres').select('pattern, type').eq('actif', true)
+    if (data) setFiltres(data)
+  }
+
+  const verifierMessage = (msg) => {
+    const lower = msg.toLowerCase().trim()
+
+    // 1. Liens
+    if (/https?:\/\/|www\./i.test(msg)) {
+      return '🚫 Les liens ne sont pas autorisés dans le chat'
+    }
+
+    // 2. Extensions fichiers/images
+    if (/\.(jpg|jpeg|png|gif|webp|pdf|zip|mp4|mov|avi|doc|xls|apk)\b/i.test(msg)) {
+      return '🚫 Les fichiers et images ne sont pas autorisés dans le chat'
+    }
+
+    // 3. Longueur
+    if (msg.length > 200) {
+      return '🚫 Message trop long (200 caractères max)'
+    }
+
+    // 4. Mots interdits (depuis la base)
+    for (const f of filtres) {
+      const escaped = f.pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      const regex = new RegExp(`\\b${escaped}\\b`, 'i')
+      if (regex.test(lower)) {
+        return '🚫 Ce message contient un mot interdit'
+      }
+    }
+
+    return null
+  }
+
   const envoyer = async () => {
     if (!texte.trim() || sending) return
+
+    // Spam — 5 secondes entre messages
+    const now = Date.now()
+    if (now - dernierEnvoi < 5000) {
+      setFiltreMsg('⏳ Attends quelques secondes avant d\'envoyer un autre message')
+      setTimeout(() => setFiltreMsg(''), 3000)
+      return
+    }
+
+    // Filtres contenu
+    const erreur = verifierMessage(texte.trim())
+    if (erreur) {
+      setFiltreMsg(erreur)
+      setTimeout(() => setFiltreMsg(''), 3000)
+      return
+    }
+
     setSending(true)
+    setFiltreMsg('')
     await db().from('chat_messages').insert({
       groupe_id: groupe.id,
       etudiant_id: etudiant.id,
@@ -238,6 +295,7 @@ function GroupeMessages({ groupe, etudiant, onBack, onGroupeUpdated }) {
     })
     await db().from('chat_groupes').update({ last_activity_at: new Date().toISOString() }).eq('id', groupe.id)
     setTexte('')
+    setDernierEnvoi(Date.now())
     setSending(false)
   }
 
@@ -344,7 +402,13 @@ function GroupeMessages({ groupe, etudiant, onBack, onGroupeUpdated }) {
             <div ref={bottomRef} />
           </div>
           {groupe.statut !== 'inactif' ? (
-            <div style={{ padding: '12px 16px 16px', borderTop: `1px solid ${CS.border}`, display: 'flex', gap: 8, alignItems: 'flex-end', flexShrink: 0, background: 'white' }}>
+            <div style={{ borderTop: `1px solid ${CS.border}`, flexShrink: 0, background: 'white' }}>
+              {filtreMsg && (
+                <div style={{ padding: '6px 16px', background: 'rgba(239,68,68,0.08)', color: '#EF4444', fontSize: 12, fontWeight: 600 }}>
+                  {filtreMsg}
+                </div>
+              )}
+            <div style={{ padding: '12px 16px 16px', display: 'flex', gap: 8, alignItems: 'flex-end' }}>
               <textarea value={texte} onChange={e => setTexte(e.target.value.slice(0, 200))}
                 placeholder="Écris un message..." rows={1} maxLength={200}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); envoyer() } }}
@@ -355,6 +419,7 @@ function GroupeMessages({ groupe, etudiant, onBack, onGroupeUpdated }) {
                 background: texte.trim() ? 'linear-gradient(135deg,#0066FF,#3399FF)' : '#D1D5DB',
                 color: 'white', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
               }}>➤</button>
+            </div>
             </div>
           ) : (
             <div style={{ padding: '12px 16px', textAlign: 'center', color: CS.muted, fontSize: 13, borderTop: `1px solid ${CS.border}`, flexShrink: 0 }}>
