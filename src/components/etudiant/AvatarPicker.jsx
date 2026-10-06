@@ -166,7 +166,7 @@ export default function AvatarPicker({ etudiant, avatars = [], onSave, onClose }
         </div>
 
         {/* Footer */}
-        <div style={{ padding: '12px 16px 24px', borderTop: '1px solid #F0F0F0', flexShrink: 0 }}>
+        <div style={{ padding: '12px 16px 80px', borderTop: '1px solid #F0F0F0', flexShrink: 0 }}>
           {error && <div style={{ color: '#EF4444', fontSize: 12, marginBottom: 8, textAlign: 'center' }}>{error}</div>}
           <button
             onClick={handleSave}
