@@ -981,7 +981,7 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
             <button onClick={() => setShowChat(false)} style={{ background: '#F0F0F0', border: 'none', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer', fontSize: 16 }}>✕</button>
           </div>
           <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-            <ChatTab etudiant={etudiant} />
+            <ChatTab etudiant={{ ...etudiant, avatar_id: avatarId, avatar_couleur: avatarCouleur }} />
           </div>
         </div>
       )}
