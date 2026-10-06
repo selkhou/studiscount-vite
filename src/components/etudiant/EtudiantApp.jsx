@@ -380,9 +380,16 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
     loadVisites()
     loadVuesEtudiant()
     loadAvatars()
-    // Init avatar depuis etudiant
-    if (etudiant?.avatar_id) setAvatarId(etudiant.avatar_id)
-    if (etudiant?.avatar_couleur) setAvatarCouleur(etudiant.avatar_couleur)
+    // Init avatar depuis etudiant ou localStorage
+    try {
+      const s = localStorage.getItem('stu10_etudiant')
+      const et = s ? JSON.parse(s) : etudiant
+      if (et?.avatar_id) setAvatarId(et.avatar_id)
+      if (et?.avatar_couleur) setAvatarCouleur(et.avatar_couleur)
+    } catch (e) {
+      if (etudiant?.avatar_id) setAvatarId(etudiant.avatar_id)
+      if (etudiant?.avatar_couleur) setAvatarCouleur(etudiant.avatar_couleur)
+    }
   }, [])
 
   const loadAvatars = async () => {

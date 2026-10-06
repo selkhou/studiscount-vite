@@ -22,7 +22,7 @@ const PALETTE = [
 // Composant Avatar individuel (cercle coloré + SVG par dessus)
 export function AvatarCircle({ avatarId, couleur, size = 40, fichier }) {
   const bg = couleur || '#E5E7EB'
-  const svgPath = fichier ? `/avatars/${fichier}` : (avatarId ? `/avatars/${avatarId}.svg` : null)
+  const svgPath = fichier ? `/avatars/${fichier}` : (avatarId ? `/avatars/${avatarId}.webp` : null)
 
   return (
     <div style={{

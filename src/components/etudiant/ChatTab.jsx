@@ -5,7 +5,7 @@ import { CS } from '../../constants.js'
 // Mini composant avatar (inline pour éviter les imports circulaires)
 function AvatarChat({ avatarId, couleur, size = 32, fichier }) {
   const bg = couleur || '#E5E7EB'
-  const svgPath = fichier ? `/avatars/${fichier}` : (avatarId ? `/avatars/${avatarId}.svg` : null)
+  const svgPath = fichier ? `/avatars/${fichier}` : (avatarId ? `/avatars/${avatarId}.webp` : null)
   return (
     <div style={{ width: size, height: size, borderRadius: '50%', background: bg, overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       {svgPath
