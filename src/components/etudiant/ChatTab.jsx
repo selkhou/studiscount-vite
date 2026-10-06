@@ -2,6 +2,20 @@ import { useState, useEffect, useRef } from 'react'
 import { db } from '../../lib/supabase.js'
 import { CS } from '../../constants.js'
 
+// Mini composant avatar (inline pour éviter les imports circulaires)
+function AvatarChat({ avatarId, couleur, size = 32, fichier }) {
+  const bg = couleur || '#E5E7EB'
+  const svgPath = fichier ? `/avatars/${fichier}` : (avatarId ? `/avatars/${avatarId}.svg` : null)
+  return (
+    <div style={{ width: size, height: size, borderRadius: '50%', background: bg, overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      {svgPath
+        ? <img src={svgPath} alt="" style={{ width: '85%', height: '85%', objectFit: 'contain' }} onError={e => { e.target.style.display = 'none' }} />
+        : <span style={{ fontSize: size * 0.4, color: '#9CA3AF' }}>👤</span>
+      }
+    </div>
+  )
+}
+
 const CATEGORIES = [
   { id: 'anniversaire', label: '🎂 Anniversaire' },
   { id: 'sortie', label: '🎉 Sortie' },
@@ -184,10 +198,10 @@ function GroupeMessages({ groupe, etudiant, onBack, onGroupeUpdated }) {
 
     if (!msgs) { setMessages([]); setLoading(false); return }
 
-    // Charger les prénoms
+    // Charger les prénoms + avatars
     const etudiantIds = [...new Set(msgs.map(m => m.etudiant_id))]
     const { data: etudiantsData } = etudiantIds.length > 0
-      ? await db().from('etudiants').select('id, prenom').in('id', etudiantIds)
+      ? await db().from('etudiants').select('id, prenom, avatar_id, avatar_couleur').in('id', etudiantIds)
       : { data: [] }
 
     setMessages(msgs.map(m => ({
@@ -206,7 +220,7 @@ function GroupeMessages({ groupe, etudiant, onBack, onGroupeUpdated }) {
     if (!membresData) { setMembres([]); return }
     const etudiantIds = membresData.map(m => m.etudiant_id).filter(Boolean)
     const { data: etudiantsData } = etudiantIds.length > 0
-      ? await db().from('etudiants').select('id, prenom, email').in('id', etudiantIds)
+      ? await db().from('etudiants').select('id, prenom, email, avatar_id, avatar_couleur').in('id', etudiantIds)
       : { data: [] }
     setMembres(membresData.map(m => ({
       ...m,
@@ -306,9 +320,15 @@ function GroupeMessages({ groupe, etudiant, onBack, onGroupeUpdated }) {
               messages.length === 0 ? <div style={{ color: CS.muted, textAlign: 'center', marginTop: 40 }}>Aucun message — sois le premier ! 👋</div> :
               messages.map(m => {
                 const isMe = m.etudiant_id === etudiant.id
+                const et = m.etudiants
                 return (
                   <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start', marginBottom: 12 }}>
-                    {!isMe && <div style={{ fontSize: 11, color: CS.muted, marginBottom: 2, marginLeft: 4 }}>{m.etudiants?.prenom}</div>}
+                    {!isMe && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                        <AvatarChat avatarId={et?.avatar_id} couleur={et?.avatar_couleur} size={22} />
+                        <div style={{ fontSize: 11, color: CS.muted }}>{et?.prenom}</div>
+                      </div>
+                    )}
                     <div style={{
                       maxWidth: '75%', padding: '10px 14px', borderRadius: isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
                       background: isMe ? 'linear-gradient(135deg,#0066FF,#3399FF)' : '#F0F0F0',
@@ -349,8 +369,11 @@ function GroupeMessages({ groupe, etudiant, onBack, onGroupeUpdated }) {
         <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
           {membres.map(m => (
             <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: `1px solid ${CS.border}` }}>
-              <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#E8F0FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
-                {m.role === 'admin' ? '👑' : '👤'}
+              <div style={{ position: 'relative', flexShrink: 0 }}>
+                <AvatarChat avatarId={m.etudiants?.avatar_id} couleur={m.etudiants?.avatar_couleur} size={36} />
+                {m.role === 'admin' && (
+                  <span style={{ position: 'absolute', bottom: -2, right: -2, fontSize: 10 }}>👑</span>
+                )}
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: CS.text }}>{m.etudiants?.prenom}</div>

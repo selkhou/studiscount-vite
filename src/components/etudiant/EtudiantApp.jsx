@@ -23,6 +23,7 @@ import ModalCGU from '../ui/ModalCGU.jsx'
 import ChangePassword from '../ui/ChangePassword.jsx'
 import ModalPointsCadeaux from '../ui/ModalPointsCadeaux.jsx'
 import useImpressionTracker from '../../hooks/useImpressionTracker.js'
+import AvatarPicker, { AvatarCircle } from './AvatarPicker.jsx'
 
 // ── SVG Icons ─────────────────────────────────────────
 const IcoListe = ({ active }) => (
@@ -358,6 +359,10 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
   const [showModal, setShowModal] = useState(false)
   const [showChat, setShowChat] = useState(false)
   const [showMesBons, setShowMesBons] = useState(false)
+  const [avatars, setAvatars] = useState([])
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false)
+  const [avatarId, setAvatarId] = useState(null)
+  const [avatarCouleur, setAvatarCouleur] = useState(null)
   const [points, setPoints] = useState(() => {
     try {
       const s = localStorage.getItem('stu10_etudiant')
@@ -374,7 +379,38 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
     loadFavoris()
     loadVisites()
     loadVuesEtudiant()
+    loadAvatars()
+    // Init avatar depuis etudiant
+    if (etudiant?.avatar_id) setAvatarId(etudiant.avatar_id)
+    if (etudiant?.avatar_couleur) setAvatarCouleur(etudiant.avatar_couleur)
   }, [])
+
+  const loadAvatars = async () => {
+    const { data } = await db().from('avatars').select('*').eq('actif', true).order('ordre')
+    if (data) setAvatars(data)
+  }
+
+  const handleSaveAvatar = async ({ avatar_id, avatar_couleur }) => {
+    if (!etudiant?.id) return false
+    const { error } = await db().from('etudiants')
+      .update({ avatar_id, avatar_couleur })
+      .eq('id', etudiant.id)
+    if (!error) {
+      setAvatarId(avatar_id)
+      setAvatarCouleur(avatar_couleur)
+      // Mise à jour localStorage
+      try {
+        const s = localStorage.getItem('stu10_etudiant')
+        if (s) {
+          const et = JSON.parse(s)
+          et.avatar_id = avatar_id
+          et.avatar_couleur = avatar_couleur
+          localStorage.setItem('stu10_etudiant', JSON.stringify(et))
+        }
+      } catch (ex) { }
+    }
+    return !error
+  }
 
   useEffect(() => {
     if (profileTab === 'Mes points') {
@@ -753,6 +789,38 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
           <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
             {profileTab === 'Détails' && (
               <div style={{ background: '#FFFFFF', borderRadius: 16, padding: 16 }}>
+
+                {/* Bloc avatar — à droite de "Mon profil" */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 16 }}>🐾</span>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: '#1A1A2E' }}>Mon avatar</div>
+                      {avatarId
+                        ? <div style={{ fontSize: 11, color: '#9CA3AF' }}>{avatars.find(a => a.id === avatarId)?.nom || 'Avatar'}</div>
+                        : <div style={{ fontSize: 11, color: '#9CA3AF' }}>Non défini</div>
+                      }
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {avatarId && (
+                      <AvatarCircle
+                        avatarId={avatarId}
+                        couleur={avatarCouleur}
+                        size={44}
+                        fichier={avatars.find(a => a.id === avatarId)?.fichier}
+                      />
+                    )}
+                    <button
+                      onClick={() => setShowAvatarPicker(true)}
+                      style={{ padding: '6px 12px', borderRadius: 10, border: '1.5px solid #0066FF', background: 'white', color: '#0066FF', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
+                    >
+                      {avatarId ? '✏️ Modifier' : '+ Choisir'}
+                    </button>
+                  </div>
+                </div>
+                <div style={{ height: 1, background: '#F0F0F0', marginBottom: 16 }} />
+
                 <EditProfilEtudiant etudiant={etudiant} fondPerso={fondPerso} setFondPerso={setFondPerso}
                   onSave={async data => {
                     const { error } = await db().from('etudiants').update(data).eq('id', etudiant.id)
@@ -774,6 +842,14 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
                   📋 Conditions Générales d'Utilisation
                 </button>
                 {showCGUEtudiant && <ModalCGU onClose={() => setShowCGUEtudiant(false)} defaultTab="etudiant" hidePresta />}
+                {showAvatarPicker && (
+                  <AvatarPicker
+                    etudiant={{ ...etudiant, avatar_id: avatarId, avatar_couleur: avatarCouleur }}
+                    avatars={avatars}
+                    onSave={handleSaveAvatar}
+                    onClose={() => setShowAvatarPicker(false)}
+                  />
+                )}
                 <button onClick={() => { setShowProfile(false); onLogout() }}
                   style={{ width: '100%', marginTop: 8, padding: '12px', borderRadius: 12, border: 'none', background: 'rgba(239,68,68,0.08)', color: '#EF4444', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
                   Déconnexion
@@ -882,7 +958,15 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
           <span style={{ color: showChat ? '#0066FF' : '#9CA3AF', fontSize: 10, fontWeight: 700 }}>Chat</span>
         </button>
         <button className="siok-bottom-btn" onClick={() => { setShowProfile(!showProfile); setShowChat(false); setProfileTab('Détails') }}>
-          <IcoProfil active={true} />
+          {avatarId
+            ? <AvatarCircle
+                avatarId={avatarId}
+                couleur={avatarCouleur}
+                size={26}
+                fichier={avatars.find(a => a.id === avatarId)?.fichier}
+              />
+            : <IcoProfil active={true} />
+          }
           <span style={{ color: '#0066FF', fontSize: 10, fontWeight: 700, maxWidth: 60, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {etudiant?.prenom || 'Compte'}
           </span>
