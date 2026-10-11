@@ -177,7 +177,16 @@ function GroupeMessages({ groupe, etudiant, onBack, onGroupeUpdated }) {
     const channel = db().channel(`chat_${groupe.id}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `groupe_id=eq.${groupe.id}` },
         payload => {
-          setMessages(prev => [...prev, payload.new])
+          setMessages(prev => {
+            // Enrichir avec les infos étudiant depuis membres déjà chargés
+            const msg = payload.new
+            setMembres(currentMembres => {
+              const membre = currentMembres.find(m => m.etudiant_id === msg.etudiant_id)
+              msg.etudiants = membre?.etudiants || null
+              return currentMembres
+            })
+            return [...prev, msg]
+          })
           setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
         })
       .subscribe()
@@ -339,8 +348,10 @@ function GroupeMessages({ groupe, etudiant, onBack, onGroupeUpdated }) {
     onGroupeUpdated()
   }
 
+  const [confirmDesinscription, setConfirmDesinscription] = useState(false)
+
   const seDesinscrire = async () => {
-    if (!window.confirm('Te désinscrire de ce groupe ?')) return
+    if (!confirmDesinscription) { setConfirmDesinscription(true); return }
     await db().from('chat_membres').update({ statut: 'quitte' }).eq('groupe_id', groupe.id).eq('etudiant_id', etudiant.id)
     onBack()
   }
@@ -446,9 +457,22 @@ function GroupeMessages({ groupe, etudiant, onBack, onGroupeUpdated }) {
               </div>
             </div>
           ))}
-          <button onClick={seDesinscrire} style={{ marginTop: 20, width: '100%', padding: '12px', borderRadius: 12, border: 'none', background: 'rgba(239,68,68,0.08)', color: '#EF4444', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-            🚪 Me désinscrire du groupe
-          </button>
+          {!confirmDesinscription
+            ? <button onClick={seDesinscrire} style={{ marginTop: 20, width: '100%', padding: '12px', borderRadius: 12, border: 'none', background: 'rgba(239,68,68,0.08)', color: '#EF4444', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                🚪 Me désinscrire du groupe
+              </button>
+            : <div style={{ marginTop: 20, background: 'rgba(239,68,68,0.08)', borderRadius: 12, padding: '14px', textAlign: 'center' }}>
+                <div style={{ fontSize: 13, color: '#EF4444', fontWeight: 700, marginBottom: 10 }}>Tu veux vraiment quitter ce groupe ?</div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={seDesinscrire} style={{ flex: 1, padding: '10px', borderRadius: 10, border: 'none', background: '#EF4444', color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    ✅ Confirmer
+                  </button>
+                  <button onClick={() => setConfirmDesinscription(false)} style={{ flex: 1, padding: '10px', borderRadius: 10, border: 'none', background: '#F0F0F0', color: '#374151', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    Annuler
+                  </button>
+                </div>
+              </div>
+          }
         </div>
       )}
 
