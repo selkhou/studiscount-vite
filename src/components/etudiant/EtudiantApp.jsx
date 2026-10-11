@@ -962,7 +962,12 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
           <span style={{ fontSize: 9, color: blocked ? '#D1D5DB' : '#9CA3AF', marginTop: 1 }}>StuD</span>
         </button>
         <button className="siok-bottom-btn" onClick={() => { setShowChat(!showChat); setShowProfile(false) }}>
-          <span style={{ fontSize: 20 }}>💬</span>
+          <div style={{ position: 'relative', display: 'inline-flex' }}>
+            <span style={{ fontSize: 20 }}>💬</span>
+            {chatNotif && !showChat && (
+              <div style={{ position: 'absolute', top: -2, right: -2, width: 9, height: 9, borderRadius: '50%', background: '#EF4444', border: '2px solid white' }} />
+            )}
+          </div>
           <span style={{ color: showChat ? '#0066FF' : '#9CA3AF', fontSize: 10, fontWeight: 700 }}>Chat</span>
         </button>
         <button className="siok-bottom-btn" onClick={() => { setShowProfile(!showProfile); setShowChat(false); setProfileTab('Détails') }}>
