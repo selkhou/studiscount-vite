@@ -359,6 +359,7 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
   const [showModal, setShowModal] = useState(false)
   const [showChat, setShowChat] = useState(false)
   const [showMesBons, setShowMesBons] = useState(false)
+  const [chatNotif, setChatNotif] = useState(false)
   const [avatars, setAvatars] = useState([])
   const [showAvatarPicker, setShowAvatarPicker] = useState(false)
   const [avatarId, setAvatarId] = useState(null)
@@ -953,8 +954,8 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
       {/* Bottom bar */}
       <div className="siok-bottom-bar" style={{ zIndex: 3100 }}>
         <button className="siok-bottom-btn" onClick={() => { setViewMode(viewMode === 'list' ? 'map' : 'list'); setTab('offres'); setShowProfile(false) }}>
-          {viewMode === 'list' ? <IcoListe active={true} /> : <IcoCarte active={true} />}
-          <span style={{ color: '#0066FF' }}>{viewMode === 'list' ? 'Liste' : 'Carte'}</span>
+          {viewMode === 'list' ? <IcoCarte active={true} /> : <IcoListe active={true} />}
+          <span style={{ color: '#0066FF' }}>{viewMode === 'list' ? 'Carte' : 'Liste'}</span>
         </button>
         <button className="siok-bottom-btn" style={{ flex: 1.2 }} onClick={() => blocked ? null : setShowModal(true)}>
           <SIOKLogo size="sm" />
@@ -965,15 +966,20 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
           <span style={{ color: showChat ? '#0066FF' : '#9CA3AF', fontSize: 10, fontWeight: 700 }}>Chat</span>
         </button>
         <button className="siok-bottom-btn" onClick={() => { setShowProfile(!showProfile); setShowChat(false); setProfileTab('Détails') }}>
-          {avatarId
-            ? <AvatarCircle
-                avatarId={avatarId}
-                couleur={avatarCouleur}
-                size={26}
-                fichier={avatars.find(a => a.id === avatarId)?.fichier}
-              />
-            : <IcoProfil active={true} />
-          }
+          <div style={{ position: 'relative', display: 'inline-flex' }}>
+            {avatarId
+              ? <AvatarCircle
+                  avatarId={avatarId}
+                  couleur={avatarCouleur}
+                  size={26}
+                  fichier={avatars.find(a => a.id === avatarId)?.fichier}
+                />
+              : <IcoProfil active={true} />
+            }
+            {chatNotif && (
+              <div style={{ position: 'absolute', top: -2, right: -2, width: 9, height: 9, borderRadius: '50%', background: '#EF4444', border: '2px solid white' }} />
+            )}
+          </div>
           <span style={{ color: '#0066FF', fontSize: 10, fontWeight: 700, maxWidth: 60, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {etudiant?.prenom || 'Compte'}
           </span>
@@ -988,7 +994,7 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
             <button onClick={() => setShowChat(false)} style={{ background: '#F0F0F0', border: 'none', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer', fontSize: 16 }}>✕</button>
           </div>
           <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-            <ChatTab etudiant={{ ...etudiant, avatar_id: avatarId, avatar_couleur: avatarCouleur }} />
+            <ChatTab etudiant={{ ...etudiant, avatar_id: avatarId, avatar_couleur: avatarCouleur }} onNotification={setChatNotif} />
           </div>
         </div>
       )}

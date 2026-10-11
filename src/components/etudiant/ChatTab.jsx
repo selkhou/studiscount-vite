@@ -519,17 +519,53 @@ function GroupeMessages({ groupe, etudiant, onBack, onGroupeUpdated }) {
 }
 
 // ── Composant principal ChatTab ────────────────────────────
-export default function ChatTab({ etudiant }) {
+export default function ChatTab({ etudiant, onNotification }) {
   const [cguSigned, setCguSigned] = useState(null) // null=loading, false=non signé, true=signé
   const [groupes, setGroupes] = useState([])
   const [invitations, setInvitations] = useState([])
   const [screen, setScreen] = useState('list') // list | creer | messages
   const [groupeActif, setGroupeActif] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [vus, setVus] = useState({}) // { [groupe_id]: last_seen_at }
 
   useEffect(() => {
     checkCgu()
   }, [])
+
+  const loadVus = async (groupeIds) => {
+    if (!groupeIds || groupeIds.length === 0) return
+    const { data } = await db().from('chat_vus')
+      .select('groupe_id, last_seen_at')
+      .eq('etudiant_id', etudiant.id)
+      .in('groupe_id', groupeIds)
+    if (data) {
+      const map = {}
+      data.forEach(v => { map[v.groupe_id] = v.last_seen_at })
+      setVus(map)
+    }
+  }
+
+  const marquerVu = async (groupeId) => {
+    const now = new Date().toISOString()
+    await db().from('chat_vus').upsert({
+      groupe_id: groupeId,
+      etudiant_id: etudiant.id,
+      last_seen_at: now
+    }, { onConflict: 'groupe_id,etudiant_id' })
+    setVus(prev => ({ ...prev, [groupeId]: now }))
+  }
+
+  const hasNouveauMessage = (groupe) => {
+    const lastSeen = vus[groupe.id]
+    if (!lastSeen) return !!groupe.last_activity_at
+    return groupe.last_activity_at && new Date(groupe.last_activity_at) > new Date(lastSeen)
+  }
+
+  const hasNotification = groupes.some(hasNouveauMessage) || invitations.length > 0
+
+  useEffect(() => {
+    onNotification?.(hasNotification)
+  }, [hasNotification])
 
   const checkCgu = async () => {
     const { data } = await db().from('chat_cgu_signatures').select('id').eq('etudiant_id', etudiant.id).maybeSingle()
@@ -552,7 +588,9 @@ export default function ChatTab({ etudiant }) {
         .in('id', groupeIds)
       const rolesMap = {}
       memberships.forEach(m => { rolesMap[m.groupe_id] = m.role })
-      setGroupes((groupesData || []).map(g => ({ ...g, monRole: rolesMap[g.id] })))
+      const groupesList = (groupesData || []).map(g => ({ ...g, monRole: rolesMap[g.id] }))
+      setGroupes(groupesList)
+      loadVus(groupeIds)
     } else {
       setGroupes([])
     }
@@ -654,19 +692,23 @@ export default function ChatTab({ etudiant }) {
           </div>
         ) : groupes.map(g => {
           const cat = CATEGORIES.find(c => c.id === g.categorie)
+          const nonLu = hasNouveauMessage(g)
           return (
-            <div key={g.id} onClick={() => { setGroupeActif(g); setScreen('messages') }}
-              style={{ background: 'white', border: `1px solid ${CS.border}`, borderRadius: 14, padding: '14px 16px', marginBottom: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: g.statut === 'inactif' ? '#F0F0F0' : '#E8F0FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>
-                {cat?.label.split(' ')[0]}
+            <div key={g.id} onClick={() => { setGroupeActif(g); setScreen('messages'); marquerVu(g.id) }}
+              style={{ background: nonLu ? '#F0F7FF' : 'white', border: `1px solid ${nonLu ? '#BFDBFE' : CS.border}`, borderRadius: 14, padding: '14px 16px', marginBottom: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ position: 'relative', flexShrink: 0 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: g.statut === 'inactif' ? '#F0F0F0' : '#E8F0FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>
+                  {cat?.label.split(' ')[0]}
+                </div>
+                {nonLu && <div style={{ position: 'absolute', top: -3, right: -3, width: 10, height: 10, borderRadius: '50%', background: '#EF4444', border: '2px solid white' }} />}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: CS.text }}>{g.nom}</span>
+                  <span style={{ fontSize: 14, fontWeight: nonLu ? 800 : 700, color: CS.text }}>{g.nom}</span>
                   {g.monRole === 'admin' && <span style={{ fontSize: 10 }}>👑</span>}
                   {g.statut === 'inactif' && <span style={{ background: 'rgba(239,68,68,0.1)', color: '#EF4444', fontSize: 9, fontWeight: 700, padding: '1px 6px', borderRadius: 20 }}>INACTIF</span>}
                 </div>
-                <div style={{ fontSize: 11, color: CS.muted }}>{cat?.label}</div>
+                <div style={{ fontSize: 11, color: nonLu ? '#0066FF' : CS.muted }}>{cat?.label}{nonLu ? ' · Nouveaux messages' : ''}</div>
               </div>
               <span style={{ color: CS.muted, fontSize: 18 }}>›</span>
             </div>
