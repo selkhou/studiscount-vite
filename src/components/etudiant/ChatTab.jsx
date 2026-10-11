@@ -317,17 +317,22 @@ function GroupeMessages({ groupe, etudiant, onBack, onGroupeUpdated }) {
       if (!invitee) { setInviteMsg('❌ Aucun étudiant trouvé avec cet email'); setInviteLoading(false); return }
       // Vérifier déjà membre
       const { data: dejaMembre } = await db().from('chat_membres').select('id,statut').eq('groupe_id', groupe.id).eq('etudiant_id', invitee.id).maybeSingle()
-      if (dejaMembre) { setInviteMsg(`⚠️ ${invitee.prenom} est déjà dans le groupe`); setInviteLoading(false); return }
+      if (dejaMembre && dejaMembre.statut !== 'quitte') { setInviteMsg(`⚠️ ${invitee.prenom} est déjà dans le groupe`); setInviteLoading(false); return }
       // Vérifier limite 30 membres
       const actifs = membres.filter(m => m.statut === 'actif' || m.statut === 'invite')
       if (actifs.length >= 30) { setInviteMsg('❌ Limite de 30 membres atteinte'); setInviteLoading(false); return }
-      await db().from('chat_membres').insert({
-        groupe_id: groupe.id,
-        etudiant_id: invitee.id,
-        role: 'membre',
-        statut: 'invite',
-        invited_by: etudiant.id
-      })
+      if (dejaMembre?.statut === 'quitte') {
+        // Ré-invitation : mettre à jour la ligne existante
+        await db().from('chat_membres').update({ statut: 'invite', invited_by: etudiant.id }).eq('id', dejaMembre.id)
+      } else {
+        await db().from('chat_membres').insert({
+          groupe_id: groupe.id,
+          etudiant_id: invitee.id,
+          role: 'membre',
+          statut: 'invite',
+          invited_by: etudiant.id
+        })
+      }
       setInviteMsg(`✅ Invitation envoyée à ${invitee.prenom}`)
       setInviteEmail('')
       loadMembres()
@@ -443,7 +448,7 @@ function GroupeMessages({ groupe, etudiant, onBack, onGroupeUpdated }) {
       {/* Membres */}
       {tab === 'membres' && (
         <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
-          {membres.map(m => (
+          {membres.filter(m => m.statut !== 'quitte').map(m => (
             <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: `1px solid ${CS.border}` }}>
               <div style={{ position: 'relative', flexShrink: 0 }}>
                 <AvatarChat avatarId={m.etudiants?.avatar_id} couleur={m.etudiants?.avatar_couleur} size={36} />
