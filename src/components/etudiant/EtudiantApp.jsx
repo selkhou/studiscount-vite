@@ -1033,20 +1033,15 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
           <span style={{ color: showChat ? '#0066FF' : '#9CA3AF', fontSize: 10, fontWeight: 700 }}>Chat</span>
         </button>
         <button className="siok-bottom-btn" onClick={() => { setShowProfile(!showProfile); setShowChat(false); setProfileTab('Détails') }}>
-          <div style={{ position: 'relative', display: 'inline-flex' }}>
-            {avatarId
-              ? <AvatarCircle
-                  avatarId={avatarId}
-                  couleur={avatarCouleur}
-                  size={26}
-                  fichier={avatars.find(a => a.id === avatarId)?.fichier}
-                />
-              : <IcoProfil active={true} />
-            }
-            {chatNotif && (
-              <div style={{ position: 'absolute', top: -2, right: -2, width: 9, height: 9, borderRadius: '50%', background: '#EF4444', border: '2px solid white' }} />
-            )}
-          </div>
+          {avatarId
+            ? <AvatarCircle
+                avatarId={avatarId}
+                couleur={avatarCouleur}
+                size={26}
+                fichier={avatars.find(a => a.id === avatarId)?.fichier}
+              />
+            : <IcoProfil active={true} />
+          }
           <span style={{ color: '#0066FF', fontSize: 10, fontWeight: 700, maxWidth: 60, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {etudiant?.prenom || 'Compte'}
           </span>
