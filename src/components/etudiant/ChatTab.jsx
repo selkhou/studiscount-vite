@@ -532,6 +532,20 @@ export default function ChatTab({ etudiant, onNotification }) {
     checkCgu()
   }, [])
 
+  useEffect(() => {
+    if (!cguSigned || !etudiant?.id) return
+    // Realtime sur les invitations reçues
+    const channel = db().channel(`invitations_${etudiant.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'chat_membres',
+        filter: `etudiant_id=eq.${etudiant.id}`
+      }, () => { loadData() })
+      .subscribe()
+    return () => db().removeChannel(channel)
+  }, [cguSigned, etudiant?.id])
+
   const loadVus = async (groupeIds) => {
     if (!groupeIds || groupeIds.length === 0) return
     const { data } = await db().from('chat_vus')
