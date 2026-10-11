@@ -519,7 +519,7 @@ function GroupeMessages({ groupe, etudiant, onBack, onGroupeUpdated }) {
 }
 
 // ── Composant principal ChatTab ────────────────────────────
-export default function ChatTab({ etudiant, onNotification }) {
+export default function ChatTab({ etudiant, onGroupeVu }) {
   const [cguSigned, setCguSigned] = useState(null) // null=loading, false=non signé, true=signé
   const [groupes, setGroupes] = useState([])
   const [invitations, setInvitations] = useState([])
@@ -567,6 +567,7 @@ export default function ChatTab({ etudiant, onNotification }) {
       last_seen_at: now
     }, { onConflict: 'groupe_id,etudiant_id' })
     setVus(prev => ({ ...prev, [groupeId]: now }))
+    onGroupeVu?.()
   }
 
   const hasNouveauMessage = (groupe) => {
@@ -576,10 +577,6 @@ export default function ChatTab({ etudiant, onNotification }) {
   }
 
   const hasNotification = groupes.some(hasNouveauMessage) || invitations.length > 0
-
-  useEffect(() => {
-    onNotification?.(hasNotification)
-  }, [hasNotification])
 
   const checkCgu = async () => {
     const { data } = await db().from('chat_cgu_signatures').select('id').eq('etudiant_id', etudiant.id).maybeSingle()
@@ -636,6 +633,7 @@ export default function ChatTab({ etudiant, onNotification }) {
       statut: accepter ? 'actif' : 'refuse',
       joined_at: accepter ? new Date().toISOString() : null
     }).eq('id', membreId)
+    onGroupeVu?.()
     loadData()
   }
 

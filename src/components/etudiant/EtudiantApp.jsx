@@ -381,6 +381,7 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
     loadVisites()
     loadVuesEtudiant()
     loadAvatars()
+    checkChatNotif()
     // Init avatar depuis etudiant ou localStorage
     try {
       const s = localStorage.getItem('stu10_etudiant')
@@ -391,7 +392,68 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
       if (etudiant?.avatar_id) setAvatarId(etudiant.avatar_id)
       if (etudiant?.avatar_couleur) setAvatarCouleur(etudiant.avatar_couleur)
     }
+
+    // Realtime global — invitations et messages non lus
+    const channel = db().channel(`notif_${etudiant.id}`)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'chat_membres',
+        filter: `etudiant_id=eq.${etudiant.id}`
+      }, () => checkChatNotif())
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'chat_messages'
+      }, () => checkChatNotif())
+      .subscribe()
+
+    return () => db().removeChannel(channel)
   }, [])
+
+  const checkChatNotif = async () => {
+    if (!etudiant?.id) return
+
+    // 1. Invitations en attente
+    const { data: invites } = await db().from('chat_membres')
+      .select('id')
+      .eq('etudiant_id', etudiant.id)
+      .eq('statut', 'invite')
+
+    if (invites && invites.length > 0) {
+      setChatNotif(true)
+      return
+    }
+
+    // 2. Messages non lus dans mes groupes
+    const { data: memberships } = await db().from('chat_membres')
+      .select('groupe_id')
+      .eq('etudiant_id', etudiant.id)
+      .eq('statut', 'actif')
+
+    if (!memberships || memberships.length === 0) { setChatNotif(false); return }
+
+    const groupeIds = memberships.map(m => m.groupe_id)
+
+    // Récupérer last_activity_at des groupes
+    const { data: groupes } = await db().from('chat_groupes')
+      .select('id, last_activity_at')
+      .in('id', groupeIds)
+
+    // Récupérer last_seen_at de l'étudiant
+    const { data: vusData } = await db().from('chat_vus')
+      .select('groupe_id, last_seen_at')
+      .eq('etudiant_id', etudiant.id)
+      .in('groupe_id', groupeIds)
+
+    const vusMap = {}
+    vusData?.forEach(v => { vusMap[v.groupe_id] = v.last_seen_at })
+
+    const hasNonLu = (groupes || []).some(g => {
+      if (!g.last_activity_at) return false
+      const lastSeen = vusMap[g.id]
+      if (!lastSeen) return true
+      return new Date(g.last_activity_at) > new Date(lastSeen)
+    })
+
+    setChatNotif(hasNonLu)
+  }
 
   const loadAvatars = async () => {
     const { data } = await db().from('avatars').select('*').eq('actif', true).order('ordre')
@@ -999,7 +1061,7 @@ export default function EtudiantApp({ etudiant, onLogout, onHome }) {
             <button onClick={() => setShowChat(false)} style={{ background: '#F0F0F0', border: 'none', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer', fontSize: 16 }}>✕</button>
           </div>
           <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-            <ChatTab etudiant={{ ...etudiant, avatar_id: avatarId, avatar_couleur: avatarCouleur }} onNotification={setChatNotif} />
+            <ChatTab etudiant={{ ...etudiant, avatar_id: avatarId, avatar_couleur: avatarCouleur }} onGroupeVu={checkChatNotif} />
           </div>
         </div>
       )}
